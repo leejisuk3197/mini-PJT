@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>옷차림 도우미 · 하루 추천</title>
+<style>
+  :root { --bg:#f5f7fa; --card:#fff; --ink:#1f2933; --sub:#616e7c; --line:#e4e7eb; --accent:#2563eb; --must:#b45309; --must-bg:#fef3c7; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:"Pretendard","Malgun Gothic",system-ui,sans-serif; }
+  header { background:var(--card); border-bottom:1px solid var(--line); padding:14px 16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; }
+  header h1 { font-size:18px; margin:0; }
+  nav a { font-size:13px; color:var(--sub); margin-left:12px; text-decoration:none; }
+  nav a.on { color:var(--accent); font-weight:700; }
+  main { max-width:760px; margin:0 auto; padding:20px 16px 40px; }
+  .ask { display:flex; gap:8px; }
+  .ask input { flex:1; padding:12px; border:1px solid var(--line); border-radius:10px; font-size:15px; }
+  .ask button { padding:12px 18px; border:0; border-radius:10px; background:var(--accent); color:#fff; font-size:15px; }
+  .hint { font-size:12px; color:var(--sub); margin:6px 2px 18px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px; margin-bottom:14px; }
+  .weather { display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
+  .weather .icon { font-size:44px; }
+  .weather .meta b { font-size:22px; }
+  .chips span { display:inline-block; background:var(--bg); border-radius:999px; padding:4px 10px; font-size:13px; margin:4px 6px 0 0; }
+  h2 { font-size:15px; margin:0 0 10px; }
+  ul { margin:0; padding-left:18px; line-height:1.8; }
+  .must { background:var(--must-bg); color:var(--must); border-radius:10px; padding:12px 14px; font-weight:700; }
+  .looks { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:10px; margin-top:14px; }
+  .item { border:1px solid var(--line); border-radius:12px; padding:12px 10px; text-align:center; background:linear-gradient(180deg,#f8fafc,#fff); position:relative; }
+  .item .pic { font-size:42px; line-height:1.2; }
+  .item .name { font-size:13px; font-weight:700; margin-top:6px; }
+  .item .why { font-size:11px; color:var(--sub); margin-top:3px; }
+  .item.req { border-color:#f59e0b; background:linear-gradient(180deg,#fffbeb,#fff); }
+  .item.req::after { content:"필수"; position:absolute; top:6px; right:6px; font-size:10px; font-weight:700; color:#fff; background:var(--must); border-radius:999px; padding:1px 6px; }
+  .hero { display:flex; align-items:center; gap:22px; flex-wrap:wrap; margin-bottom:14px; padding:22px; border-radius:18px; color:#fff;
+          background:linear-gradient(135deg,#1e3a8a 0%,#2563eb 55%,#60a5fa 100%); box-shadow:0 10px 28px rgba(37,99,235,.28); }
+  .hero .stack { font-size:52px; line-height:1.1; text-align:center; min-width:96px; padding:14px 10px; border-radius:16px; background:rgba(255,255,255,.16); }
+  .hero .body { flex:1; min-width:220px; }
+  .hero .badge { display:inline-block; font-size:12px; font-weight:700; letter-spacing:.02em; background:#fbbf24; color:#78350f; border-radius:999px; padding:3px 10px; }
+  .hero h2 { font-size:22px; margin:10px 0 8px; color:#fff; }
+  .hero p { margin:0; font-size:15px; line-height:1.65; color:#e0e7ff; }
+  .hero .tags { margin-top:12px; }
+  .hero .tags span { display:inline-block; font-size:12px; background:rgba(255,255,255,.18); border-radius:999px; padding:4px 10px; margin:4px 6px 0 0; }
+  .ctx { font-size:13px; color:var(--sub); }
+  .ctx code { background:var(--bg); padding:1px 6px; border-radius:4px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>☔ 출근 옷차림 도우미</h1>
+  <nav>
+    <a href="01_single_day.html" class="on">하루 추천</a>
+    <a href="02_multi_day.html">여러 날</a>
+    <a href="03_out_of_scope.html">범위 밖 · trace</a>
+  </nav>
+</header>
+<main>
+  <div class="ask">
+    <input value="내일 부산 출근하는데 뭐 입을까? 추위를 좀 타요">
+    <button>물어보기</button>
+  </div>
+  <p class="hint">지원 도시: 서울·부산·강릉·제주·대전 · 날짜: 오늘~모레 (기준일 2026-12-15, 데모 데이터)</p>
+
+  <section class="card weather">
+    <div class="icon">🌧️</div>
+    <div class="meta">
+      <div><b>부산 · 12월 16일(화)</b></div>
+      <div class="chips">
+        <span>비 · 강수확률 80%</span><span>최저 6℃ / 최고 11℃</span><span>체감 3℃</span><span>바람 5m/s</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="hero">
+    <div class="stack">🧣<br>🧥<br>👖<br>👞</div>
+    <div class="body">
+      <span class="badge">✨ 오늘의 코디</span>
+      <h2>베이지 트렌치 × 아이보리 니트</h2>
+      <p>차콜 슬랙스와 블랙 방수 로퍼로 마무리한 비 오는 날 출근룩. 밝은 아우터가 흐린 날 인상을 화사하게 하고, 기모 니트로 추위 타는 분도 따뜻하게.</p>
+      <div class="tags"><span>#비오는날</span><span>#출근룩</span><span>#추위타는분</span><span>#체감3℃</span></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>추천 옷차림</h2>
+    <ul>
+      <li>상의: 기모 니트 + 방수 트렌치코트 (추위를 타신다고 해서 한 겹 더)</li>
+      <li>하의: 슬랙스, 밑단이 젖지 않게 발목 기장</li>
+      <li>신발: 방수 처리된 로퍼 또는 레인부츠</li>
+      <li>소품: 얇은 머플러 (체감 3℃)</li>
+    </ul>
+
+    <div class="looks">
+      <div class="item"><div class="pic">🧥</div><div class="name">방수 트렌치코트</div><div class="why">비·바람 차단</div></div>
+      <div class="item"><div class="pic">🧶</div><div class="name">기모 니트</div><div class="why">추위 타는 분께 한 겹 더</div></div>
+      <div class="item"><div class="pic">👖</div><div class="name">발목 기장 슬랙스</div><div class="why">밑단 젖음 방지</div></div>
+      <div class="item"><div class="pic">👞</div><div class="name">방수 로퍼</div><div class="why">젖은 길 미끄럼 주의</div></div>
+      <div class="item"><div class="pic">🧣</div><div class="name">얇은 머플러</div><div class="why">체감 3℃</div></div>
+      <div class="item req"><div class="pic">☂️</div><div class="name">우산</div><div class="why">강수확률 80%</div></div>
+    </div>
+  </section>
+
+  <div class="must">☂ 필수 준비물: 우산</div>
+
+  <section class="card ctx" style="margin-top:14px">
+    <h2>근거 문서</h2>
+    <div>· <code>guide_rain</code> 비 오는 날은 방수 아우터와 미끄럼 방지 신발을 권장…</div>
+    <div>· <code>guide_temp_bands</code> 5~9℃ 구간: 코트, 니트, 기모 하의…</div>
+    <div>· <code>weather:부산:2026-12-16</code> precip_type=rain, precip_prob=80</div>
+  </section>
+</main>
+</body>
+</html>

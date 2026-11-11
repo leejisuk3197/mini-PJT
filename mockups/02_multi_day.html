@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>옷차림 도우미 · 여러 날</title>
+<style>
+  :root { --bg:#f5f7fa; --card:#fff; --ink:#1f2933; --sub:#616e7c; --line:#e4e7eb; --accent:#2563eb; --must:#b45309; --must-bg:#fef3c7; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:"Pretendard","Malgun Gothic",system-ui,sans-serif; }
+  header { background:var(--card); border-bottom:1px solid var(--line); padding:14px 16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; }
+  header h1 { font-size:18px; margin:0; }
+  nav a { font-size:13px; color:var(--sub); margin-left:12px; text-decoration:none; }
+  nav a.on { color:var(--accent); font-weight:700; }
+  main { max-width:900px; margin:0 auto; padding:20px 16px 40px; }
+  .ask { display:flex; gap:8px; }
+  .ask input { flex:1; padding:12px; border:1px solid var(--line); border-radius:10px; font-size:15px; }
+  .ask button { padding:12px 18px; border:0; border-radius:10px; background:var(--accent); color:#fff; font-size:15px; }
+  .hint { font-size:12px; color:var(--sub); margin:6px 2px 18px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:14px; }
+  .day { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:10px; }
+  .day .top { display:flex; justify-content:space-between; align-items:center; }
+  .day .icon { font-size:34px; }
+  .day h3 { margin:0; font-size:15px; }
+  .chips span { display:inline-block; background:var(--bg); border-radius:999px; padding:3px 9px; font-size:12px; margin:3px 4px 0 0; }
+  ul { margin:0; padding-left:18px; line-height:1.7; font-size:14px; }
+  .must { background:var(--must-bg); color:var(--must); border-radius:10px; padding:10px 12px; font-weight:700; font-size:14px; }
+  .none { background:var(--bg); color:var(--sub); border-radius:10px; padding:10px 12px; font-size:14px; }
+  .note { font-size:13px; color:var(--sub); margin-top:16px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>☔ 출근 옷차림 도우미</h1>
+  <nav>
+    <a href="01_single_day.html">하루 추천</a>
+    <a href="02_multi_day.html" class="on">여러 날</a>
+    <a href="03_out_of_scope.html">범위 밖 · trace</a>
+  </nav>
+</header>
+<main>
+  <div class="ask">
+    <input value="강릉 오늘부터 모레까지 출근 옷차림 알려줘">
+    <button>물어보기</button>
+  </div>
+  <p class="hint">날짜마다 따로 판정해서, 비·눈이 오는 날에만 필수 준비물을 붙입니다.</p>
+
+  <div class="grid">
+    <article class="day">
+      <div class="top"><h3>12/15(월) 오늘</h3><span class="icon">❄️</span></div>
+      <div class="chips"><span>눈 · 90%</span><span>-6℃ / -1℃</span><span>체감 -11℃</span></div>
+      <ul>
+        <li>롱패딩 + 히트텍 + 기모 바지</li>
+        <li>미끄럼 방지 방한화</li>
+      </ul>
+      <div class="must">🧤 필수 준비물: 장갑, 목도리</div>
+    </article>
+
+    <article class="day">
+      <div class="top"><h3>12/16(화) 내일</h3><span class="icon">🌨️</span></div>
+      <div class="chips"><span>진눈깨비 · 70%</span><span>-1℃ / 3℃</span><span>체감 -5℃</span></div>
+      <ul>
+        <li>방수 패딩 + 니트</li>
+        <li>젖어도 되는 방수 신발</li>
+      </ul>
+      <div class="must">☂🧤 필수 준비물: 우산, 장갑, 목도리</div>
+    </article>
+
+    <article class="day">
+      <div class="top"><h3>12/17(수) 모레</h3><span class="icon">☀️</span></div>
+      <div class="chips"><span>맑음 · 10%</span><span>-4℃ / 2℃</span><span>체감 -8℃</span></div>
+      <ul>
+        <li>울 코트 + 터틀넥</li>
+        <li>맑지만 추우니 귀마개 추천</li>
+      </ul>
+      <div class="none">비·눈 소식 없음 — 필수 준비물 없음</div>
+    </article>
+  </div>
+
+  <p class="note">※ 시간대별 예보는 제공하지 않으며 하루 기준 값으로 안내합니다. 근거: guide_snow_sleet, guide_feels_like, guide_temp_bands</p>
+</main>
+</body>
+</html>

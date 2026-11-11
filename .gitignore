@@ -1,0 +1,17 @@
+# Secrets — never push to the public repo
+.env
+.env.*
+
+# Course material (redistribution prohibited)
+docs/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Local runtime artifacts
+*.sqlite
+chroma_db/
+*.log
+agent_log.jsonl
