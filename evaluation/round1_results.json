@@ -4373,9 +4373,9 @@
  "ragas": {
   "cases": {
    "1": {
-    "faithfulness": null,
+    "faithfulness": 0.7,
     "answer_relevancy": null,
-    "context_precision": null,
+    "context_precision": 1.0,
     "context_recall": null
    },
    "2": {
@@ -4386,49 +4386,49 @@
    },
    "3": {
     "faithfulness": 0.85,
-    "answer_relevancy": null,
+    "answer_relevancy": 0.516,
     "context_precision": null,
     "context_recall": 0.667
    },
    "4": {
-    "faithfulness": null,
+    "faithfulness": 0.85,
     "answer_relevancy": 0.651,
-    "context_precision": null,
-    "context_recall": null
+    "context_precision": 0.7,
+    "context_recall": 1.0
    },
    "5": {
-    "faithfulness": null,
+    "faithfulness": 0.722,
     "answer_relevancy": null,
-    "context_precision": null,
+    "context_precision": 1.0,
     "context_recall": 0.8
    },
    "6": {
-    "faithfulness": null,
+    "faithfulness": 0.636,
     "answer_relevancy": null,
     "context_precision": 1.0,
-    "context_recall": null
+    "context_recall": 0.8
    },
    "7": {
     "faithfulness": 0.6,
-    "answer_relevancy": null,
-    "context_precision": null,
+    "answer_relevancy": 0.644,
+    "context_precision": 1.0,
     "context_recall": 0.4
    },
    "8": {
-    "faithfulness": null,
-    "answer_relevancy": null,
-    "context_precision": null,
-    "context_recall": null
+    "faithfulness": 0.958,
+    "answer_relevancy": 0.662,
+    "context_precision": 0.0,
+    "context_recall": 0.667
    },
    "16": {
     "faithfulness": null,
-    "answer_relevancy": null,
+    "answer_relevancy": 0.48,
     "context_precision": null,
     "context_recall": 1.0
    },
    "19": {
     "faithfulness": null,
-    "answer_relevancy": null,
+    "answer_relevancy": 0.346,
     "context_precision": null,
     "context_recall": 0.25
    },
@@ -4436,14 +4436,14 @@
     "faithfulness": 0.857,
     "answer_relevancy": 0.265,
     "context_precision": 0.0,
-    "context_recall": null
+    "context_recall": 0.5
    }
   },
   "mean": {
-   "faithfulness": 0.804,
-   "answer_relevancy": 0.458,
-   "context_precision": 0.667,
-   "context_recall": 0.62
+   "faithfulness": 0.787,
+   "answer_relevancy": 0.509,
+   "context_precision": 0.713,
+   "context_recall": 0.668
   },
   "n": 11,
   "method": "v3: reference=ragas_references.json, contexts=문서+날씨 도구 결과, 고정 한국어 프롬프트(ragas_prompts_ko), 지표별 실행",
@@ -4451,55 +4451,28 @@
   "llm": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
   "missing": {
    "1": [
-    "faithfulness",
     "answer_relevancy",
-    "context_precision",
     "context_recall"
    ],
    "2": [
     "answer_relevancy"
    ],
    "3": [
-    "answer_relevancy",
     "context_precision"
-   ],
-   "4": [
-    "faithfulness",
-    "context_precision",
-    "context_recall"
    ],
    "5": [
-    "faithfulness",
-    "answer_relevancy",
-    "context_precision"
+    "answer_relevancy"
    ],
    "6": [
-    "faithfulness",
-    "answer_relevancy",
-    "context_recall"
-   ],
-   "7": [
-    "answer_relevancy",
-    "context_precision"
-   ],
-   "8": [
-    "faithfulness",
-    "answer_relevancy",
-    "context_precision",
-    "context_recall"
+    "answer_relevancy"
    ],
    "16": [
     "faithfulness",
-    "answer_relevancy",
     "context_precision"
    ],
    "19": [
     "faithfulness",
-    "answer_relevancy",
     "context_precision"
-   ],
-   "20": [
-    "context_recall"
    ]
   }
  },
