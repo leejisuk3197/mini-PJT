@@ -76,9 +76,9 @@ RAG, 구조화 출력, 가드레일은 아직 넣지 않는다.
 
 ## 묶음 6 · 1차 평가 (Day 9 종료까지)
 
-- [ ] **6-1. 평가 실행기** — CSV 20건을 /query로 보내고 결정적 검사(expected_tools, forbidden, 필수 준비물 줄, 안내 케이스 수치 없음)를 돌린다
+- [x] **6-1. 평가 실행기** — CSV 20건을 /query로 보내고 결정적 검사(expected_tools, forbidden, 필수 준비물 줄, 안내 케이스 수치 없음)를 돌린다
   - 확인: 20건 각각에 통과/실패와 실패 이유가 표로 나온다
-- [ ] **6-2. LLM-as-Judge** — 케이스마다 score와 is_correct를 매긴다
+- [x] **6-2. LLM-as-Judge** — 케이스마다 score와 is_correct를 매긴다
   - 확인: 20건 모두 score(1~5)와 is_correct 값이 있다
 - [ ] **6-3. RAGAS** — faithfulness, answer_relevancy, context_precision, context_recall을 잰다
   - 확인: 지표 네 개가 숫자로 나온다
