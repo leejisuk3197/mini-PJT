@@ -438,6 +438,37 @@ def removal_notice(question: str, trace: list[dict], items_by_date: dict[str, li
     return f"※ 요청하신 {names}{topic_particle(names)} {' · '.join(reasons)} 때문에 필수 준비물이라 목록에서 뺄 수 없습니다."
 
 
+RULE_ITEMS = ("우산", "장갑", "목도리")
+# 필수가 아닌 품목에 붙은 강한 표현 → 권장 표현 (긴 표현부터 바꾼다)
+SOFTEN_RULES = [
+    (re.compile(r"(꼭|반드시)\s*챙기(세요|셔야 합니다|셔야 해요|시기 바랍니다)"), "챙기시면 좋습니다"),
+    (re.compile(r"(꼭|반드시)\s*챙겨(야 합니다|야 해요|주세요)"), "챙기시면 좋습니다"),
+    (re.compile(r"필수로\s*챙기(세요|셔야 합니다|시기 바랍니다)"), "챙기시면 좋습니다"),
+    (re.compile(r"필수(입니다|예요|이에요)"), "권장합니다"),
+    (re.compile(r"필수(로|적으로)"), "되도록"),
+    (re.compile(r"필수(?! 준비물:)"), "권장"),
+]
+
+
+def soften_optional_items(text: str, items_by_date: dict[str, list[str]]) -> str:
+    """그날 필수가 아닌 우산·장갑·목도리를 '필수/꼭 챙기세요'라고 쓴 문장을 권장 표현으로 바꾼다.
+
+    여러 날 답변에서 어느 날짜에든 필수인 품목은 건드리지 않는다 (날짜별 문장을 구분하기 어렵기 때문).
+    """
+    required = {n for names in items_by_date.values() for n in names}
+    optional = [n for n in RULE_ITEMS if n not in required]
+    if not optional:
+        return text
+    sentences = re.split(r"(?<=[.!?。\n])", text)
+    out = []
+    for s in sentences:
+        if any(n in s for n in optional) and not any(n in s for n in required) and not s.lstrip().startswith("☂"):
+            for pattern, repl in SOFTEN_RULES:
+                s = pattern.sub(repl, s)
+        out.append(s)
+    return "".join(out)
+
+
 def apply_required_line(text: str, items_by_date: dict[str, list[str]], notice: str | None = None) -> str:
     """모델이 쓴 필수 준비물 줄을 모두 지우고, (제거 거절 안내와) 규칙으로 정한 줄을 답변 끝에 다시 붙인다."""
     body = REQUIRED_LINE_PATTERN.sub("", text).strip()
@@ -458,7 +489,8 @@ class RequiredItemsMiddleware(AgentMiddleware):
         trace = collect_tool_trace(state["messages"])
         items_by_date = decide_required_items(trace)
         question = next((m.text for m in state["messages"] if isinstance(m, HumanMessage)), "")
-        fixed = apply_required_line(last.text, items_by_date, removal_notice(question, trace, items_by_date))
+        body = soften_optional_items(last.text, items_by_date)
+        fixed = apply_required_line(body, items_by_date, removal_notice(question, trace, items_by_date))
         if fixed == last.text:
             return None
         return {"messages": [AIMessage(content=fixed, id=last.id)]}
