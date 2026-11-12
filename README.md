@@ -87,7 +87,7 @@ python evaluation/run_eval.py --round 2 --ragas    # RAGAS 4개 지표
 - context_recall: 0.67 (0.70)
 - context_precision: 0.66 (0.70)
 - faithfulness: 0.78 (0.80)
-- answer_relevancy: 0.45 (0.80)
+- answer_relevancy: 0.46 (0.80)
 
 측정 설정:
 
@@ -96,7 +96,7 @@ python evaluation/run_eval.py --round 2 --ragas    # RAGAS 4개 지표
 - contexts: 검색 문서 + 날씨 도구 결과
 - 프롬프트: `evaluation/ragas_prompts_ko/`에 고정한 한국어 프롬프트
 
-같은 11건으로 1차와 비교하면 거의 같다 (0.638→0.644 / 0.609→0.609 / 0.775→0.788 / 0.539→0.474). 이번 개선이 검색 품질이 아니라 도구 호출과 필수품 규칙을 고친 것이기 때문이다. 4개 모두 목표에 못 미친다. 자세한 내용은 `evaluation/round2_report.md`에 있다.
+같은 11건으로 1차와 비교하면 거의 같다 (0.638→0.644 / 0.609→0.609 / 0.775→0.789 / 0.539→0.475). 이번 개선이 검색 품질이 아니라 도구 호출과 필수품 규칙을 고친 것이기 때문이다. 4개 모두 목표에 못 미친다. 자세한 내용은 `evaluation/round2_report.md`에 있다.
 
 ## 인-아웃 세트 통과율 (자체 평가)
 - 1차 (Day 9 종료): 13 / 20 통과

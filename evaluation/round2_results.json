@@ -4687,7 +4687,7 @@
    },
    "2": {
     "faithfulness": 0.789,
-    "answer_relevancy": 0.765,
+    "answer_relevancy": 0.767,
     "context_precision": 1.0,
     "context_recall": 0.8
    },
@@ -4716,37 +4716,37 @@
     "context_recall": 0.8
    },
    "7": {
-    "faithfulness": 0.688,
-    "answer_relevancy": 0.411,
+    "faithfulness": 0.562,
+    "answer_relevancy": 0.414,
     "context_precision": 1.0,
     "context_recall": 0.4
    },
    "8": {
     "faithfulness": 1.0,
-    "answer_relevancy": 0.727,
+    "answer_relevancy": 0.733,
     "context_precision": 0.0,
     "context_recall": 1.0
    },
    "14": {
     "faithfulness": 0.8,
-    "answer_relevancy": 0.453,
+    "answer_relevancy": 0.506,
     "context_precision": 1.0,
     "context_recall": 0.667
    },
    "15": {
     "faithfulness": 0.714,
-    "answer_relevancy": 0.237,
+    "answer_relevancy": 0.275,
     "context_precision": 0.833,
     "context_recall": 1.0
    },
    "16": {
-    "faithfulness": 0.733,
+    "faithfulness": 0.8,
     "answer_relevancy": 0.386,
     "context_precision": 0.0,
     "context_recall": 1.0
    },
    "19": {
-    "faithfulness": 0.5,
+    "faithfulness": 0.562,
     "answer_relevancy": 0.527,
     "context_precision": 0.0,
     "context_recall": 0.25
@@ -4760,7 +4760,7 @@
   },
   "mean": {
    "faithfulness": 0.784,
-   "answer_relevancy": 0.454,
+   "answer_relevancy": 0.462,
    "context_precision": 0.656,
    "context_recall": 0.673
   },
