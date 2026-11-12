@@ -1,6 +1,7 @@
 # Secrets — never push to the public repo
 .env
 .env.*
+*.env
 
 # Course material (redistribution prohibited) — root only, keep data/docs/
 /docs/

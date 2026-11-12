@@ -4374,20 +4374,20 @@
   "cases": {
    "1": {
     "faithfulness": 0.7,
-    "answer_relevancy": null,
+    "answer_relevancy": 0.318,
     "context_precision": 1.0,
-    "context_recall": null
+    "context_recall": 0.333
    },
    "2": {
     "faithfulness": 0.909,
-    "answer_relevancy": null,
+    "answer_relevancy": 0.774,
     "context_precision": 1.0,
     "context_recall": 0.6
    },
    "3": {
     "faithfulness": 0.85,
     "answer_relevancy": 0.516,
-    "context_precision": null,
+    "context_precision": 1.0,
     "context_recall": 0.667
    },
    "4": {
@@ -4398,13 +4398,13 @@
    },
    "5": {
     "faithfulness": 0.722,
-    "answer_relevancy": null,
+    "answer_relevancy": 0.549,
     "context_precision": 1.0,
     "context_recall": 0.8
    },
    "6": {
     "faithfulness": 0.636,
-    "answer_relevancy": null,
+    "answer_relevancy": 0.728,
     "context_precision": 1.0,
     "context_recall": 0.8
    },
@@ -4421,15 +4421,15 @@
     "context_recall": 0.667
    },
    "16": {
-    "faithfulness": null,
+    "faithfulness": 0.875,
     "answer_relevancy": 0.48,
-    "context_precision": null,
+    "context_precision": 0.0,
     "context_recall": 1.0
    },
    "19": {
-    "faithfulness": null,
+    "faithfulness": 0.571,
     "answer_relevancy": 0.346,
-    "context_precision": null,
+    "context_precision": 0.0,
     "context_recall": 0.25
    },
    "20": {
@@ -4440,41 +4440,16 @@
    }
   },
   "mean": {
-   "faithfulness": 0.787,
-   "answer_relevancy": 0.509,
-   "context_precision": 0.713,
-   "context_recall": 0.668
+   "faithfulness": 0.775,
+   "answer_relevancy": 0.539,
+   "context_precision": 0.609,
+   "context_recall": 0.638
   },
   "n": 11,
   "method": "v3: reference=ragas_references.json, contexts=문서+날씨 도구 결과, 고정 한국어 프롬프트(ragas_prompts_ko), 지표별 실행",
   "prompt_not_adapted": [],
   "llm": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
-  "missing": {
-   "1": [
-    "answer_relevancy",
-    "context_recall"
-   ],
-   "2": [
-    "answer_relevancy"
-   ],
-   "3": [
-    "context_precision"
-   ],
-   "5": [
-    "answer_relevancy"
-   ],
-   "6": [
-    "answer_relevancy"
-   ],
-   "16": [
-    "faithfulness",
-    "context_precision"
-   ],
-   "19": [
-    "faithfulness",
-    "context_precision"
-   ]
-  }
+  "missing": {}
  },
  "ragas_initial": {
   "cases": {
