@@ -4369,5 +4369,84 @@
    },
    "evaluated_at": "2026-11-12T11:43:50"
   }
+ },
+ "ragas": {
+  "cases": {
+   "1": {
+    "faithfulness": 0.4,
+    "answer_relevancy": 0.365,
+    "context_precision": 0.0,
+    "context_recall": 0.2
+   },
+   "2": {
+    "faithfulness": 0.421,
+    "answer_relevancy": 0.567,
+    "context_precision": 0.0,
+    "context_recall": 0.0
+   },
+   "3": {
+    "faithfulness": 0.4,
+    "answer_relevancy": 0.235,
+    "context_precision": 0.0,
+    "context_recall": 0.667
+   },
+   "4": {
+    "faithfulness": 0.643,
+    "answer_relevancy": 0.31,
+    "context_precision": 0.0,
+    "context_recall": 0.5
+   },
+   "5": {
+    "faithfulness": 0.368,
+    "answer_relevancy": 0.292,
+    "context_precision": 0.0,
+    "context_recall": 0.0
+   },
+   "6": {
+    "faithfulness": 0.118,
+    "answer_relevancy": 0.409,
+    "context_precision": 1.0,
+    "context_recall": 0.667
+   },
+   "7": {
+    "faithfulness": 0.583,
+    "answer_relevancy": 0.344,
+    "context_precision": 0.0,
+    "context_recall": 0.0
+   },
+   "8": {
+    "faithfulness": 0.031,
+    "answer_relevancy": 0.263,
+    "context_precision": 0.0,
+    "context_recall": 0.0
+   },
+   "16": {
+    "faithfulness": 0.5,
+    "answer_relevancy": 0.429,
+    "context_precision": 0.0,
+    "context_recall": 0.75
+   },
+   "19": {
+    "faithfulness": 0.391,
+    "answer_relevancy": 0.245,
+    "context_precision": 0.0,
+    "context_recall": 0.0
+   },
+   "20": {
+    "faithfulness": 0.357,
+    "answer_relevancy": 0.111,
+    "context_precision": 1.0,
+    "context_recall": 0.667
+   }
+  },
+  "mean": {
+   "faithfulness": 0.383,
+   "answer_relevancy": 0.325,
+   "context_precision": 0.182,
+   "context_recall": 0.314
+  },
+  "n": 11,
+  "reference": "test_queries.csv expected_traits",
+  "llm": "us.anthropic.claude-haiku-4-5-20251001-v1:0"
  }
 }

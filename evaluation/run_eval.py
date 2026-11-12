@@ -5,6 +5,7 @@
     python evaluation/run_eval.py --round 1 --only 8 16
     python evaluation/run_eval.py --round 1 --rerun    # 처음부터 다시
     python evaluation/run_eval.py --round 1 --url http://127.0.0.1:8000/query   # 서버로 보내기
+    python evaluation/run_eval.py --round 1 --ragas    # 저장된 결과로 RAGAS 4개 지표 계산
 
 결과는 evaluation/round{N}_results.json 에 케이스마다 저장된다. 모델 한도 등으로 중간에 멈춰도
 다음 실행에서 남은 케이스부터 이어서 돈다.
@@ -217,6 +218,82 @@ def print_summary(results: dict, cases: list[dict]) -> None:
         print(f"Judge 평균 {sum(scores) / len(scores):.2f} ({len(scores)}건)")
 
 
+RAGAS_METRIC_NAMES = ["faithfulness", "answer_relevancy", "context_precision", "context_recall"]
+
+
+def import_ragas():
+    """ragas를 불러온다.
+
+    ragas 0.4.3은 langchain-community 0.4에서 사라진 chat_models.vertexai 모듈을 import한다.
+    ragas는 이 클래스를 모델 종류 확인용 목록에만 쓰므로, 빈 대체 모듈을 먼저 등록해 import 오류만 피한다.
+    """
+    import types
+    name = "langchain_community.chat_models.vertexai"
+    if name not in sys.modules:
+        stub = types.ModuleType(name)
+        stub.ChatVertexAI = type("ChatVertexAI", (), {})
+        sys.modules[name] = stub
+    import ragas
+    return ragas
+
+
+def run_ragas(results: dict, cases: list[dict]) -> dict:
+    """저장된 응답 중 문서 검색을 한 케이스로 RAGAS 4개 지표를 계산한다. reference는 expected_traits를 쓴다."""
+    import_ragas()
+    from langchain_aws import BedrockEmbeddings
+    from ragas import EvaluationDataset, RunConfig, evaluate
+    from ragas.embeddings import LangchainEmbeddingsWrapper
+    from ragas.llms import LangchainLLMWrapper
+    from ragas.metrics import answer_relevancy, context_precision, context_recall, faithfulness
+
+    traits = {c["id"]: c["expected_traits"] for c in cases}
+    ids, samples = [], []
+    for cid, r in sorted(results["cases"].items(), key=lambda kv: int(kv[0])):
+        contexts = [c["text"] for c in r["response"].get("contexts", [])]
+        if not contexts:
+            continue
+        ids.append(cid)
+        samples.append({
+            "user_input": r["input"],
+            "response": r["response"]["answer"],
+            "retrieved_contexts": contexts,
+            "reference": traits[cid],
+        })
+    if not samples:
+        return {"cases": {}, "mean": {}, "n": 0}
+
+    region = os.getenv("AWS_DEFAULT_REGION", "us-east-1")
+    llm = LangchainLLMWrapper(ChatBedrockConverse(
+        model=os.getenv("JUDGE_MODEL_ID", DEFAULT_JUDGE_MODEL_ID), region_name=region, temperature=0))
+    embeddings = LangchainEmbeddingsWrapper(BedrockEmbeddings(
+        model_id="amazon.titan-embed-text-v2:0", region_name=region))
+    result = evaluate(
+        dataset=EvaluationDataset.from_list(samples),
+        metrics=[faithfulness, answer_relevancy, context_precision, context_recall],
+        llm=llm, embeddings=embeddings,
+        run_config=RunConfig(max_workers=2, timeout=300, max_retries=3),
+        show_progress=True,
+    )
+    df = result.to_pandas()
+    per_case = {cid: {m: (None if df[m].isna()[i] else round(float(df[m][i]), 3)) for m in RAGAS_METRIC_NAMES}
+                for i, cid in enumerate(ids)}
+    mean = {m: round(float(df[m].mean(skipna=True)), 3) for m in RAGAS_METRIC_NAMES}
+    return {"cases": per_case, "mean": mean, "n": len(ids),
+            "reference": "test_queries.csv expected_traits", "llm": os.getenv("JUDGE_MODEL_ID", DEFAULT_JUDGE_MODEL_ID)}
+
+
+def print_ragas(ragas_result: dict) -> None:
+    """RAGAS 평균과 케이스별 점수, 목표 대비 통과 여부를 출력한다."""
+    targets = {"faithfulness": 0.80, "answer_relevancy": 0.80, "context_precision": 0.70, "context_recall": 0.70}
+    print(f"\nRAGAS ({ragas_result['n']}건, reference=expected_traits)")
+    for m in RAGAS_METRIC_NAMES:
+        v = ragas_result["mean"].get(m)
+        mark = "-" if v is None else ("달성" if v >= targets[m] else "미달")
+        print(f"  {m:<18} {v}  (목표 {targets[m]:.2f}, {mark})")
+    for cid, s in ragas_result["cases"].items():
+        print(f"  [{cid:>2}] " + "  ".join(f"{m[:12]}={s[m]}" for m in RAGAS_METRIC_NAMES))
+
+
 def main() -> None:
     """명령줄 인자를 읽어 남은 케이스를 평가하고, 한 건씩 결과를 저장한다."""
     parser = argparse.ArgumentParser(description="웨더핏 인-아웃 세트 평가")
@@ -224,10 +301,17 @@ def main() -> None:
     parser.add_argument("--only", nargs="*", help="이 id들만 실행")
     parser.add_argument("--rerun", action="store_true", help="저장된 결과를 무시하고 다시 실행")
     parser.add_argument("--url", help="지정하면 이 /query 주소로 보내고, 없으면 같은 프로세스에서 실행")
+    parser.add_argument("--ragas", action="store_true", help="케이스를 다시 돌리지 않고 저장된 결과로 RAGAS만 계산")
     args = parser.parse_args()
 
     out_path = ROOT / "evaluation" / f"round{args.round}_results.json"
     results = load_results(out_path)
+
+    if args.ragas:
+        results["ragas"] = run_ragas(results, load_cases())
+        save_results(out_path, results)
+        print_ragas(results["ragas"])
+        return
     results["meta"] = {
         "round": args.round,
         "agent_model": os.getenv("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-5-20250929-v1:0 (기본값)"),

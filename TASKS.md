@@ -80,7 +80,7 @@ RAG, 구조화 출력, 가드레일은 아직 넣지 않는다.
   - 확인: 20건 각각에 통과/실패와 실패 이유가 표로 나온다
 - [x] **6-2. LLM-as-Judge** — 케이스마다 score와 is_correct를 매긴다
   - 확인: 20건 모두 score(1~5)와 is_correct 값이 있다
-- [ ] **6-3. RAGAS** — faithfulness, answer_relevancy, context_precision, context_recall을 잰다
+- [x] **6-3. RAGAS** — faithfulness, answer_relevancy, context_precision, context_recall을 잰다
   - 확인: 지표 네 개가 숫자로 나온다
 - [ ] **6-4. 1차 리포트** — 손대지 않은 결과를 그대로 `evaluation/round1_report.md`에 쓴다
   - 확인: 통과 건수, 카테고리별 결과, 실패 원인 상위 2~3개가 적혀 있다
