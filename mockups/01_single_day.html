@@ -17,6 +17,9 @@
   .ask input { flex:1; padding:12px; border:1px solid var(--line); border-radius:10px; font-size:15px; }
   .ask button { padding:12px 18px; border:0; border-radius:10px; background:var(--accent); color:#fff; font-size:15px; }
   .hint { font-size:12px; color:var(--sub); margin:6px 2px 18px; }
+  .support { display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin:12px 0 2px; padding:10px 12px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:12px; }
+  .support .label { font-size:13px; font-weight:700; color:#1e3a8a; margin-right:4px; }
+  .support .city { font-size:14px; font-weight:800; color:var(--accent); background:#fff; border:1.5px solid var(--accent); border-radius:999px; padding:4px 12px; }
   .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px; margin-bottom:14px; }
   .weather { display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
   .weather .icon { font-size:44px; }
@@ -59,7 +62,11 @@
     <input value="내일 부산 출근하는데 뭐 입을까? 추위를 좀 타요">
     <button>물어보기</button>
   </div>
-  <p class="hint">지원 도시: 서울·부산·강릉·제주·대전 · 날짜: 오늘~모레 (기준일 2026-12-15, 데모 데이터)</p>
+  <div class="support" aria-label="지원 도시">
+    <span class="label">📍 지원 도시</span>
+    <span class="city">서울</span><span class="city">부산</span><span class="city">강릉</span><span class="city">제주</span><span class="city">대전</span>
+  </div>
+  <p class="hint">날짜: 오늘~모레 (기준일 2026-12-15, 데모 데이터) · 이 5개 도시 외에는 날씨를 제공하지 않습니다</p>
 
   <section class="card weather">
     <div class="icon">🌧️</div>
