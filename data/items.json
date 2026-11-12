@@ -1,0 +1,22 @@
+{
+  "umbrella": {"name": "우산", "icon": "☂️", "category": "소품"},
+  "gloves": {"name": "장갑", "icon": "🧤", "category": "소품"},
+  "scarf": {"name": "목도리", "icon": "🧣", "category": "소품"},
+  "earmuffs": {"name": "귀마개", "icon": "🎧", "category": "소품"},
+  "beanie": {"name": "비니", "icon": "🧢", "category": "소품"},
+  "long_padding": {"name": "롱패딩", "icon": "🧥", "category": "외투"},
+  "short_padding": {"name": "숏패딩", "icon": "🧥", "category": "외투"},
+  "waterproof_padding": {"name": "방수 패딩", "icon": "🧥", "category": "외투"},
+  "wool_coat": {"name": "울 코트", "icon": "🧥", "category": "외투"},
+  "trench_coat": {"name": "트렌치코트", "icon": "🧥", "category": "외투"},
+  "light_jacket": {"name": "가벼운 재킷", "icon": "🧥", "category": "외투"},
+  "cardigan": {"name": "가디건", "icon": "🧶", "category": "상의"},
+  "knit": {"name": "니트", "icon": "🧶", "category": "상의"},
+  "shirt": {"name": "셔츠", "icon": "👔", "category": "상의"},
+  "thermal_inner": {"name": "발열 내의", "icon": "👕", "category": "이너"},
+  "fleece_pants": {"name": "기모 바지", "icon": "👖", "category": "하의"},
+  "slacks": {"name": "슬랙스", "icon": "👖", "category": "하의"},
+  "waterproof_shoes": {"name": "방수 신발", "icon": "👞", "category": "신발"},
+  "winter_boots": {"name": "방한화", "icon": "🥾", "category": "신발"},
+  "sneakers": {"name": "운동화", "icon": "👟", "category": "신발"}
+}

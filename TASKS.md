@@ -56,11 +56,11 @@ RAG, 구조화 출력, 가드레일은 아직 넣지 않는다.
 
 ## 묶음 4 · 구조화 출력과 응답 형식
 
-- [ ] **4-1. 구조화 출력 스키마** — LCEL structured output으로 `items[{item_id, name, reason, required}]`, `outfit_summary{title, description, tags}`를 받는다. `data/items.json` 아이템 사전을 만든다
+- [x] **4-1. 구조화 출력 스키마** — LCEL structured output으로 `items[{item_id, name, reason, required}]`, `outfit_summary{title, description, tags}`를 받는다. `data/items.json` 아이템 사전을 만든다
   - 확인: 케이스 1 응답이 스키마 검증을 통과하고 우산이 `required=true`다
-- [ ] **4-2. 필수품 보장 미들웨어** — after_model 미들웨어로 필수품 목록과 "☂ 필수 준비물" 줄을 코드가 최종 결정한다. 필수품이 없으면 줄을 출력하지 않는다
+- [x] **4-2. 필수품 보장 미들웨어** — after_model 미들웨어로 필수품 목록과 "☂ 필수 준비물" 줄을 코드가 최종 결정한다. 필수품이 없으면 줄을 출력하지 않는다
   - 확인: 케이스 5·15는 줄이 없고, 케이스 19(우산 빼줘)는 우산이 남는다
-- [ ] **4-3. trace 정리** — 도구 호출, 규칙 판정, 검색 결과를 `{step, input, output}`으로 기록한다
+- [x] **4-3. trace 정리** — 도구 호출, 규칙 판정, 검색 결과를 `{step, input, output}`으로 기록한다
   - 확인: 케이스 4의 trace에 get_weather, calc_feels_like, search_outfit_docs가 모두 있다
 
 ---
