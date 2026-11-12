@@ -115,7 +115,8 @@ def build_agent():
         model=build_model(),
         tools=[get_weather, calc_feels_like, search_outfit_docs],
         system_prompt=SYSTEM_PROMPT,
-        middleware=[InputGuardMiddleware(), OutputPIIMiddleware(), RequiredItemsMiddleware()],
+        middleware=[InputGuardMiddleware(), ToolEnforcementMiddleware(), OutputPIIMiddleware(),
+                    DailyValueNoticeMiddleware(), RequiredItemsMiddleware()],
     )
 
 
@@ -196,13 +197,85 @@ class InputGuardMiddleware(AgentMiddleware):
     def before_model(self, state, runtime):
         """마지막 메시지가 사용자 입력일 때만 검사한다 (도구 호출 뒤 재호출은 건너뜀)."""
         last = state["messages"][-1]
-        if not isinstance(last, HumanMessage):
+        if not isinstance(last, HumanMessage) or last.additional_kwargs.get("enforcement"):
             return None
         reason = input_guard(last.text)
         if reason is None:
             return None
         refusal = AIMessage(content=INJECTION_REFUSAL, additional_kwargs={"guard": "input", "reason": reason})
         return {"messages": [refusal], "jump_to": "end"}
+
+
+# ---------------------------------------------------------------------------
+# 도구 호출 보장: 최종 답변 직전에 빠진 도구가 있으면 모델로 한 번 되돌린다
+# ---------------------------------------------------------------------------
+OTHER_KOREAN_CITIES = ["인천", "광주", "울산", "수원", "세종", "청주", "전주", "춘천", "원주", "포항",
+                       "창원", "천안", "여수", "목포", "속초", "안동", "경주", "김해", "고양", "성남", "용인"]
+OUTFIT_INTENT = re.compile(r"입|옷|코디|챙기|챙겨|우산|장갑|목도리|준비물")
+MAX_ENFORCEMENT = 1
+
+
+def missing_tools(question: str, called: list[str], weather_ok: bool) -> list[str]:
+    """질문과 지금까지의 도구 호출을 보고 빠진 필수 도구 이름을 돌려준다.
+
+    - 질문에 도시 이름이 있는데 get_weather를 안 불렀으면 get_weather
+    - 옷차림·준비물 질문이고 날씨 조회에 성공했는데 체감온도 계산이나 문서 검색을 안 했으면 그 도구
+    """
+    cities = list(_WEATHER["cities"]) + OTHER_KOREAN_CITIES
+    missing = []
+    if "get_weather" not in called and any(c in question for c in cities):
+        missing.append("get_weather")
+    if weather_ok and OUTFIT_INTENT.search(question):
+        missing += [t for t in ("calc_feels_like", "search_outfit_docs") if t not in called]
+    return missing
+
+
+class ToolEnforcementMiddleware(AgentMiddleware):
+    """최종 답변에 필요한 도구 호출이 빠졌으면 안내 메시지를 붙여 모델로 되돌리는 after_model 미들웨어."""
+
+    @hook_config(can_jump_to=["model"])
+    def after_model(self, state, runtime):
+        """도구 호출이 없는 최종 답변일 때만 검사하고, 질문당 한 번만 되돌린다."""
+        messages = state["messages"]
+        last = messages[-1]
+        if not isinstance(last, AIMessage) or last.tool_calls:
+            return None
+        if sum(1 for m in messages if isinstance(m, HumanMessage) and m.additional_kwargs.get("enforcement")) >= MAX_ENFORCEMENT:
+            return None
+        trace = collect_tool_trace(messages)
+        called = [s["step"][len("tool:"):] for s in trace]
+        weather_ok = any(s["step"] == "tool:get_weather" and "date" in s["output"] for s in trace)
+        question = next((m.text for m in messages if isinstance(m, HumanMessage)), "")
+        missing = missing_tools(question, called, weather_ok)
+        if not missing:
+            return None
+        reminder = HumanMessage(
+            content=(f"[시스템 확인] 답변하기 전에 다음 도구를 먼저 호출하세요: {', '.join(missing)}. "
+                     "도구 결과를 반영해 처음부터 다시 완성된 답변을 써 주세요. 이 확인 메시지는 답변에 언급하지 마세요."),
+            additional_kwargs={"enforcement": True, "missing": missing},
+        )
+        return {"messages": [reminder], "jump_to": "model"}
+
+
+# ---------------------------------------------------------------------------
+# 시간대 질문 안내: 시각을 물으면 하루 기준 값이라는 안내를 코드로 붙인다
+# ---------------------------------------------------------------------------
+HOURLY_PATTERN = re.compile(r"\d{1,2}\s*시(?!간)|몇\s*시|퇴근할 때 몇 도|출근할 때 몇 도")
+DAILY_VALUE_NOTICE = "※ 시간대별 예보는 제공하지 않아, 하루 기준 최저·최고 기온으로만 안내합니다."
+
+
+class DailyValueNoticeMiddleware(AgentMiddleware):
+    """질문이 특정 시각의 날씨를 물으면 최종 답변 맨 앞에 하루 기준 값 안내를 붙이는 after_model 미들웨어."""
+
+    def after_model(self, state, runtime):
+        """안내가 아직 없을 때만 같은 id의 메시지로 바꿔 끼운다."""
+        last = state["messages"][-1]
+        if not isinstance(last, AIMessage) or last.tool_calls:
+            return None
+        question = next((m.text for m in state["messages"] if isinstance(m, HumanMessage)), "")
+        if not HOURLY_PATTERN.search(question) or DAILY_VALUE_NOTICE in last.text:
+            return None
+        return {"messages": [AIMessage(content=f"{DAILY_VALUE_NOTICE}\n\n{last.text}", id=last.id)]}
 
 
 # ---------------------------------------------------------------------------
@@ -408,6 +481,8 @@ def run_query(agent, question: str) -> dict:
     guard = messages[-1].additional_kwargs.get("guard") if isinstance(messages[-1], AIMessage) else None
     trace = [{"step": "guard:input", "input": question,
               "output": messages[-1].additional_kwargs["reason"] if guard else "통과"}]
+    trace += [{"step": "middleware:tool_enforcement", "input": m.additional_kwargs.get("missing"), "output": "모델로 되돌림"}
+              for m in messages if isinstance(m, HumanMessage) and m.additional_kwargs.get("enforcement")]
     trace += collect_tool_trace(messages)
     items_by_date = decide_required_items(trace)
     trace.append({"step": "rule:required_items", "input": "get_weather 결과", "output": items_by_date})
