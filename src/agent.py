@@ -213,6 +213,16 @@ OTHER_KOREAN_CITIES = ["인천", "광주", "울산", "수원", "세종", "청주
                        "창원", "천안", "여수", "목포", "속초", "안동", "경주", "김해", "고양", "성남", "용인"]
 OUTFIT_INTENT = re.compile(r"입|옷|코디|챙기|챙겨|우산|장갑|목도리|준비물")
 MAX_ENFORCEMENT = 1
+DATE_EXPRESSION = re.compile(r"오늘|내일|모레|\d{4}-\d{2}-\d{2}|\d{1,2}월\s*\d{1,2}일|\d{1,2}/\d{1,2}|(?:다음|이번|지난)\s*주\s*\S*요일")
+
+
+def forced_weather_calls(question: str) -> list[dict]:
+    """질문에 나온 도시마다 get_weather 호출을 코드로 만든다. 날짜 표현이 없으면 '오늘'을 쓴다."""
+    match = DATE_EXPRESSION.search(question)
+    date_text = match.group(0) if match else "오늘"
+    cities = [c for c in list(_WEATHER["cities"]) + OTHER_KOREAN_CITIES if c in question]
+    return [{"name": "get_weather", "args": {"city": c, "date_text": date_text}, "id": f"forced_weather_{i}",
+             "type": "tool_call"} for i, c in enumerate(cities)]
 
 
 def missing_tools(question: str, called: list[str], weather_ok: bool) -> list[str]:
@@ -233,9 +243,13 @@ def missing_tools(question: str, called: list[str], weather_ok: bool) -> list[st
 class ToolEnforcementMiddleware(AgentMiddleware):
     """최종 답변에 필요한 도구 호출이 빠졌으면 안내 메시지를 붙여 모델로 되돌리는 after_model 미들웨어."""
 
-    @hook_config(can_jump_to=["model"])
+    @hook_config(can_jump_to=["model", "tools"])
     def after_model(self, state, runtime):
-        """도구 호출이 없는 최종 답변일 때만 검사하고, 질문당 한 번만 되돌린다."""
+        """도구 호출이 없는 최종 답변일 때만 검사한다.
+
+        get_weather가 빠졌으면 모델에 다시 지시하지 않고, 코드가 만든 get_weather 호출로 답변을 바꿔
+        도구를 실행시킨다 (안내를 무시하는 경우가 반복됐다). 다른 도구가 빠졌으면 질문당 한 번만 되돌린다.
+        """
         messages = state["messages"]
         last = messages[-1]
         if not isinstance(last, AIMessage) or last.tool_calls:
@@ -249,6 +263,10 @@ class ToolEnforcementMiddleware(AgentMiddleware):
         missing = missing_tools(question, called, weather_ok)
         if not missing:
             return None
+        if "get_weather" in missing:
+            forced = AIMessage(content="", id=last.id, tool_calls=forced_weather_calls(question),
+                               additional_kwargs={"forced_tool": "get_weather"})
+            return {"messages": [forced], "jump_to": "tools"}
         reminder = HumanMessage(
             content=(f"[시스템 확인] 답변하기 전에 다음 도구를 먼저 호출하세요: {', '.join(missing)}. "
                      "도구 결과를 반영해 처음부터 다시 완성된 답변을 써 주세요. 이 확인 메시지는 답변에 언급하지 마세요."),
@@ -455,10 +473,11 @@ def finalize_items(card: OutfitCard | None, required_names: list[str]) -> list[d
     items = []
     for name in required_names:
         item_id = ITEM_ID_BY_NAME[name]
-        items.append({"item_id": item_id, "name": name, "required": True,
+        items.append({"item_id": item_id, "name": name, "icon": ITEM_CATALOG[item_id]["icon"], "required": True,
                       "reason": picks.pop(item_id, "비·눈 규칙에 따른 필수 준비물입니다.")})
     for item_id, reason in picks.items():
-        items.append({"item_id": item_id, "name": ITEM_CATALOG[item_id]["name"], "required": False, "reason": reason})
+        items.append({"item_id": item_id, "name": ITEM_CATALOG[item_id]["name"], "icon": ITEM_CATALOG[item_id]["icon"],
+                      "required": False, "reason": reason})
     return items
 
 
@@ -483,6 +502,8 @@ def run_query(agent, question: str) -> dict:
               "output": messages[-1].additional_kwargs["reason"] if guard else "통과"}]
     trace += [{"step": "middleware:tool_enforcement", "input": m.additional_kwargs.get("missing"), "output": "모델로 되돌림"}
               for m in messages if isinstance(m, HumanMessage) and m.additional_kwargs.get("enforcement")]
+    trace += [{"step": "middleware:forced_tool_call", "input": [c["args"] for c in m.tool_calls], "output": "코드가 직접 호출"}
+              for m in messages if isinstance(m, AIMessage) and m.additional_kwargs.get("forced_tool")]
     trace += collect_tool_trace(messages)
     items_by_date = decide_required_items(trace)
     trace.append({"step": "rule:required_items", "input": "get_weather 결과", "output": items_by_date})

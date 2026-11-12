@@ -157,7 +157,9 @@ def judge(case: dict, response: dict) -> JudgeResult:
             temperature=0,
         )
         _judge_chain = JUDGE_PROMPT | model.with_structured_output(JudgeResult)
-    weather = [s["output"] for s in response.get("trace", []) if s["step"] == "tool:get_weather"]
+    # 에이전트가 도구로 얻은 수치(날씨 조회 + 체감온도 계산)를 모두 넘겨야 Judge가 계산된 체감온도를 지어낸 값으로 오판하지 않는다
+    weather = [s["output"] for s in response.get("trace", [])
+               if s["step"] in ("tool:get_weather", "tool:calc_feels_like")]
     return _judge_chain.invoke({
         "question": case["input"],
         "expected_traits": case["expected_traits"],
