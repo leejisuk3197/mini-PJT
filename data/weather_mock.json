@@ -1,0 +1,36 @@
+{
+  "mock_today": "2026-12-15",
+  "unit": {
+    "temp": "℃",
+    "precip_prob": "%",
+    "wind_speed": "m/s"
+  },
+  "cities": {
+    "부산": {
+      "2026-12-15": {
+        "condition": "흐림",
+        "temp_min": 4,
+        "temp_max": 10,
+        "precip_prob": 30,
+        "precip_type": "none",
+        "wind_speed": 4.0
+      },
+      "2026-12-16": {
+        "condition": "비",
+        "temp_min": 6,
+        "temp_max": 11,
+        "precip_prob": 80,
+        "precip_type": "rain",
+        "wind_speed": 5.0
+      },
+      "2026-12-17": {
+        "condition": "맑음",
+        "temp_min": 3,
+        "temp_max": 9,
+        "precip_prob": 10,
+        "precip_type": "none",
+        "wind_speed": 3.0
+      }
+    }
+  }
+}
