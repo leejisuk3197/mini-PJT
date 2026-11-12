@@ -2,6 +2,7 @@
 
 import os
 import re
+import threading
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -26,6 +27,7 @@ KEEP_POS_TAGS = {"NNG", "NNP", "NNB", "NR", "NP", "VV", "VA", "SL", "SN"}
 
 kiwi = Kiwi()
 _hybrid_retriever = None
+_build_lock = threading.Lock()  # 도구가 병렬 호출돼도 검색기를 한 번만 만들도록 막는다
 
 FRONT_MATTER = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
 
@@ -117,10 +119,11 @@ def build_hybrid_retriever(k: int = TOP_K) -> EnsembleRetriever:
 
 
 def get_retriever() -> EnsembleRetriever:
-    """하이브리드 검색기를 한 번만 만들어 재사용한다."""
+    """하이브리드 검색기를 한 번만 만들어 재사용한다. 여러 스레드가 동시에 불러도 안전하다."""
     global _hybrid_retriever
-    if _hybrid_retriever is None:
-        _hybrid_retriever = build_hybrid_retriever()
+    with _build_lock:
+        if _hybrid_retriever is None:
+            _hybrid_retriever = build_hybrid_retriever()
     return _hybrid_retriever
 
 
