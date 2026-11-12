@@ -6,6 +6,32 @@
     "wind_speed": "m/s"
   },
   "cities": {
+    "서울": {
+      "2026-12-15": {
+        "condition": "맑음",
+        "temp_min": -10,
+        "temp_max": -3,
+        "precip_prob": 0,
+        "precip_type": "none",
+        "wind_speed": 7.0
+      },
+      "2026-12-16": {
+        "condition": "흐림",
+        "temp_min": -5,
+        "temp_max": 1,
+        "precip_prob": 20,
+        "precip_type": "none",
+        "wind_speed": 4.0
+      },
+      "2026-12-17": {
+        "condition": "맑음",
+        "temp_min": -7,
+        "temp_max": 0,
+        "precip_prob": 10,
+        "precip_type": "none",
+        "wind_speed": 5.0
+      }
+    },
     "부산": {
       "2026-12-15": {
         "condition": "흐림",
@@ -30,6 +56,84 @@
         "precip_prob": 10,
         "precip_type": "none",
         "wind_speed": 3.0
+      }
+    },
+    "강릉": {
+      "2026-12-15": {
+        "condition": "눈",
+        "temp_min": -6,
+        "temp_max": -1,
+        "precip_prob": 90,
+        "precip_type": "snow",
+        "wind_speed": 3.3
+      },
+      "2026-12-16": {
+        "condition": "진눈깨비",
+        "temp_min": -1,
+        "temp_max": 3,
+        "precip_prob": 70,
+        "precip_type": "sleet",
+        "wind_speed": 3.3
+      },
+      "2026-12-17": {
+        "condition": "맑음",
+        "temp_min": -4,
+        "temp_max": 2,
+        "precip_prob": 10,
+        "precip_type": "none",
+        "wind_speed": 2.7
+      }
+    },
+    "제주": {
+      "2026-12-15": {
+        "condition": "흐림",
+        "temp_min": 9,
+        "temp_max": 14,
+        "precip_prob": 30,
+        "precip_type": "none",
+        "wind_speed": 4.0
+      },
+      "2026-12-16": {
+        "condition": "맑음",
+        "temp_min": 12,
+        "temp_max": 17,
+        "precip_prob": 10,
+        "precip_type": "none",
+        "wind_speed": 3.0
+      },
+      "2026-12-17": {
+        "condition": "구름많음",
+        "temp_min": 10,
+        "temp_max": 16,
+        "precip_prob": 20,
+        "precip_type": "none",
+        "wind_speed": 3.5
+      }
+    },
+    "대전": {
+      "2026-12-15": {
+        "condition": "흐림",
+        "temp_min": -2,
+        "temp_max": 6,
+        "precip_prob": 50,
+        "precip_type": "none",
+        "wind_speed": 2.0
+      },
+      "2026-12-16": {
+        "condition": "맑음",
+        "temp_min": -4,
+        "temp_max": 5,
+        "precip_prob": 20,
+        "precip_type": "none",
+        "wind_speed": 2.0
+      },
+      "2026-12-17": {
+        "condition": "흐림",
+        "temp_min": -1,
+        "temp_max": 7,
+        "precip_prob": 40,
+        "precip_type": "none",
+        "wind_speed": 2.5
       }
     }
   }
