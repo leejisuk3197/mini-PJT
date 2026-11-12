@@ -1,0 +1,22 @@
+{
+  "ragas_version": "0.4.3",
+  "original_hash": 1965236317115556042,
+  "language": "korean",
+  "instruction": "Given a question and an answer, analyze the complexity of each sentence in the answer. Break down each sentence into one or more fully understandable statements. Ensure that no pronouns are used in any statement. Format the outputs in JSON.",
+  "examples": [
+    {
+      "input": {
+        "question": "알베르트 아인슈타인은 누구였으며 그는 무엇으로 가장 잘 알려져 있는가?",
+        "answer": "그는 독일 태생의 이론 물리학자였으며, 모든 시대의 가장 위대하고 영향력 있는 물리학자 중 한 명으로 널리 인정받고 있습니다. 그는 상대성 이론을 개발한 것으로 가장 잘 알려져 있으며, 양자역학 이론의 발전에도 중요한 기여를 했습니다."
+      },
+      "output": {
+        "statements": [
+          "알베르트 아인슈타인은 독일 태생의 이론 물리학자였습니다.",
+          "알베르트 아인슈타인은 모든 시대의 가장 위대하고 영향력 있는 물리학자 중 한 명으로 인정받고 있습니다.",
+          "알베르트 아인슈타인은 상대성 이론을 개발한 것으로 가장 잘 알려져 있습니다.",
+          "알베르트 아인슈타인은 또한 양자역학 이론의 발전에 중요한 기여를 했습니다."
+        ]
+      }
+    }
+  ]
+}

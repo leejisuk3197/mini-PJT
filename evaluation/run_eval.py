@@ -219,6 +219,47 @@ def print_summary(results: dict, cases: list[dict]) -> None:
 
 
 RAGAS_METRIC_NAMES = ["faithfulness", "answer_relevancy", "context_precision", "context_recall"]
+REFERENCES_PATH = ROOT / "evaluation" / "ragas_references.json"
+PROMPTS_DIR = ROOT / "evaluation" / "ragas_prompts_ko"
+RAGAS_METHOD = "v3: reference=ragas_references.json, contexts=문서+날씨 도구 결과, 고정 한국어 프롬프트(ragas_prompts_ko), 지표별 실행"
+
+
+def tool_contexts(response: dict) -> list[str]:
+    """trace의 날씨 조회·체감온도 계산 결과를 RAGAS가 읽을 수 있는 한국어 근거 문장으로 바꾼다."""
+    texts = []
+    for step in response.get("trace", []):
+        out = step.get("output") or {}
+        if step["step"] == "tool:get_weather" and "date" in out:
+            texts.append(
+                f"[날씨 조회 결과] {out['city']} {out['date']}: {out['condition']}, 최저 {out['temp_min']}℃, "
+                f"최고 {out['temp_max']}℃, 강수확률 {out['precip_prob']}%, 강수 유형 {out['precip_type']}, "
+                f"풍속 {out['wind_speed']}m/s")
+        elif step["step"] == "tool:calc_feels_like" and "feels_like" in out:
+            texts.append(
+                f"[체감온도 계산 결과] 기온 {out['temp']}℃, 풍속 {out['wind_speed']}m/s → 체감온도 {out['feels_like']}℃ "
+                f"({out['formula']})")
+    return texts
+
+
+def adapt_prompts_to_korean(metrics: list, llm) -> list[str]:
+    """RAGAS 지표의 프롬프트를 한국어 버전으로 맞춘다. 실패한 지표 이름을 돌려준다 (그 지표는 기본 프롬프트 사용).
+
+    번역은 실행마다 달라질 수 있어 채점 기준이 흔들린다. 그래서 처음 한 번 번역한 프롬프트를
+    evaluation/ragas_prompts_ko/에 저장하고, 이후(1차·2차 모두)에는 저장본을 불러 쓴다.
+    """
+    import asyncio
+    PROMPTS_DIR.mkdir(exist_ok=True)
+    failed = []
+    for metric in metrics:
+        try:
+            if any(PROMPTS_DIR.glob(f"{metric.name}_*_korean.json")):
+                metric.set_prompts(**metric.load_prompts(str(PROMPTS_DIR), language="korean"))
+            else:
+                metric.set_prompts(**asyncio.run(metric.adapt_prompts(language="korean", llm=llm)))
+                metric.save_prompts(str(PROMPTS_DIR))
+        except Exception:
+            failed.append(metric.name)
+    return failed
 
 
 def import_ragas():
@@ -237,8 +278,12 @@ def import_ragas():
     return ragas
 
 
-def run_ragas(results: dict, cases: list[dict]) -> dict:
-    """저장된 응답 중 문서 검색을 한 케이스로 RAGAS 4개 지표를 계산한다. reference는 expected_traits를 쓴다."""
+def run_ragas(results: dict, cases: list[dict], only: list[str] | None = None, workers: int = 2) -> dict:
+    """저장된 응답 중 문서 검색을 한 케이스로 RAGAS 4개 지표를 계산한다.
+
+    reference는 evaluation/ragas_references.json의 모범 답변을 쓰고, contexts에는 검색 문서와
+    날씨 도구 결과를 함께 넣는다 (답변의 날씨 수치도 근거로 확인되도록).
+    """
     import_ragas()
     from langchain_aws import BedrockEmbeddings
     from ragas import EvaluationDataset, RunConfig, evaluate
@@ -246,46 +291,70 @@ def run_ragas(results: dict, cases: list[dict]) -> dict:
     from ragas.llms import LangchainLLMWrapper
     from ragas.metrics import answer_relevancy, context_precision, context_recall, faithfulness
 
-    traits = {c["id"]: c["expected_traits"] for c in cases}
-    ids, samples = [], []
+    references = json.loads(REFERENCES_PATH.read_text(encoding="utf-8"))
+    ids, samples, skipped = [], [], []
     for cid, r in sorted(results["cases"].items(), key=lambda kv: int(kv[0])):
-        contexts = [c["text"] for c in r["response"].get("contexts", [])]
-        if not contexts:
+        docs = [c["text"] for c in r["response"].get("contexts", [])]
+        if not docs or (only and cid not in only):
+            continue
+        if cid not in references:
+            skipped.append(cid)
             continue
         ids.append(cid)
         samples.append({
             "user_input": r["input"],
             "response": r["response"]["answer"],
-            "retrieved_contexts": contexts,
-            "reference": traits[cid],
+            "retrieved_contexts": tool_contexts(r["response"]) + docs,
+            "reference": references[cid],
         })
+    if skipped:
+        print(f"모범 답변이 없어 RAGAS에서 뺀 케이스: {skipped}")
     if not samples:
-        return {"cases": {}, "mean": {}, "n": 0}
+        return {"cases": {}, "mean": {}, "n": 0, "method": RAGAS_METHOD}
 
     region = os.getenv("AWS_DEFAULT_REGION", "us-east-1")
     llm = LangchainLLMWrapper(ChatBedrockConverse(
         model=os.getenv("JUDGE_MODEL_ID", DEFAULT_JUDGE_MODEL_ID), region_name=region, temperature=0))
     embeddings = LangchainEmbeddingsWrapper(BedrockEmbeddings(
         model_id="amazon.titan-embed-text-v2:0", region_name=region))
-    result = evaluate(
-        dataset=EvaluationDataset.from_list(samples),
-        metrics=[faithfulness, answer_relevancy, context_precision, context_recall],
-        llm=llm, embeddings=embeddings,
-        run_config=RunConfig(max_workers=2, timeout=300, max_retries=3),
-        show_progress=True,
-    )
-    df = result.to_pandas()
-    per_case = {cid: {m: (None if df[m].isna()[i] else round(float(df[m][i]), 3)) for m in RAGAS_METRIC_NAMES}
-                for i, cid in enumerate(ids)}
-    mean = {m: round(float(df[m].mean(skipna=True)), 3) for m in RAGAS_METRIC_NAMES}
-    return {"cases": per_case, "mean": mean, "n": len(ids),
-            "reference": "test_queries.csv expected_traits", "llm": os.getenv("JUDGE_MODEL_ID", DEFAULT_JUDGE_MODEL_ID)}
+    metrics = [faithfulness, answer_relevancy, context_precision, context_recall]
+    not_adapted = adapt_prompts_to_korean(metrics, llm)
+    if not_adapted:
+        print(f"한국어 프롬프트 변환 실패(기본 프롬프트 사용): {not_adapted}")
+    per_case = {cid: {} for cid in ids}
+    dataset = EvaluationDataset.from_list(samples)
+    for metric in metrics:  # 지표별로 따로 돌려 한 지표의 시간 초과가 다른 지표에 번지지 않게 한다
+        df = evaluate(
+            dataset=dataset, metrics=[metric], llm=llm, embeddings=embeddings,
+            run_config=RunConfig(max_workers=workers, timeout=600, max_retries=3),
+            show_progress=False,
+        ).to_pandas()
+        for i, cid in enumerate(ids):
+            per_case[cid][metric.name] = None if df[metric.name].isna()[i] else round(float(df[metric.name][i]), 3)
+        print(f"  {metric.name} 완료")
+    mean = {}
+    return {"cases": per_case, "mean": mean, "n": len(ids), "method": RAGAS_METHOD,
+            "prompt_not_adapted": not_adapted, "llm": os.getenv("JUDGE_MODEL_ID", DEFAULT_JUDGE_MODEL_ID)}
+
+
+def merge_ragas(base: dict, partial: dict) -> dict:
+    """다시 계산한 케이스 점수로 빈 값만 채우고, 전체 평균을 다시 낸다."""
+    for cid, scores in partial["cases"].items():
+        old = base["cases"].setdefault(cid, {m: None for m in RAGAS_METRIC_NAMES})
+        for m, v in scores.items():
+            if old.get(m) is None and v is not None:
+                old[m] = v
+    for m in RAGAS_METRIC_NAMES:
+        values = [s[m] for s in base["cases"].values() if s.get(m) is not None]
+        base["mean"][m] = round(sum(values) / len(values), 3) if values else None
+    base["missing"] = {c: [m for m, v in s.items() if v is None] for c, s in base["cases"].items() if None in s.values()}
+    return base
 
 
 def print_ragas(ragas_result: dict) -> None:
     """RAGAS 평균과 케이스별 점수, 목표 대비 통과 여부를 출력한다."""
     targets = {"faithfulness": 0.80, "answer_relevancy": 0.80, "context_precision": 0.70, "context_recall": 0.70}
-    print(f"\nRAGAS ({ragas_result['n']}건, reference=expected_traits)")
+    print(f"\nRAGAS ({ragas_result['n']}건, {ragas_result.get('method', 'v1: reference=expected_traits')})")
     for m in RAGAS_METRIC_NAMES:
         v = ragas_result["mean"].get(m)
         mark = "-" if v is None else ("달성" if v >= targets[m] else "미달")
@@ -308,7 +377,15 @@ def main() -> None:
     results = load_results(out_path)
 
     if args.ragas:
-        results["ragas"] = run_ragas(results, load_cases())
+        previous = results.get("ragas")
+        if previous and previous.get("method") == RAGAS_METHOD and args.only:
+            # 빈 값이 난 케이스만 한 건씩 다시 계산해 기존 결과에 채운다
+            partial = run_ragas(results, load_cases(), only=args.only, workers=1)
+            results["ragas"] = merge_ragas(previous, partial)
+        else:
+            if previous and previous.get("method") != RAGAS_METHOD and "ragas_initial" not in results:
+                results["ragas_initial"] = previous  # 맨 처음 방법의 값은 리포트용으로 한 번만 남긴다
+            results["ragas"] = merge_ragas(run_ragas(results, load_cases()), {"cases": {}})
         save_results(out_path, results)
         print_ragas(results["ragas"])
         return

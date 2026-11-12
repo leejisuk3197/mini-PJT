@@ -1,0 +1,26 @@
+{
+  "ragas_version": "0.4.3",
+  "original_hash": 165057706646671881,
+  "language": "korean",
+  "instruction": "Generate a question for the given answer and Identify if answer is noncommittal. Give noncommittal as 1 if the answer is noncommittal and 0 if the answer is committal. A noncommittal answer is one that is evasive, vague, or ambiguous. For example, \"I don't know\" or \"I'm not sure\" are noncommittal answers",
+  "examples": [
+    {
+      "input": {
+        "response": "알베르트 아인슈타인은 독일에서 태어났습니다."
+      },
+      "output": {
+        "question": "알베르트 아인슈타인은 어디서 태어났습니까?",
+        "noncommittal": 0
+      }
+    },
+    {
+      "input": {
+        "response": "나는 2022년 이후의 정보를 알 수 없기 때문에 2023년에 발명된 스마트폰의 획기적인 기능에 대해 알지 못합니다."
+      },
+      "output": {
+        "question": "2023년에 발명된 스마트폰의 획기적인 기능은 무엇이었습니까?",
+        "noncommittal": 1
+      }
+    }
+  ]
+}
