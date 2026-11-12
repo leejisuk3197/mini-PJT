@@ -2,8 +2,8 @@
 .env
 .env.*
 
-# Course material (redistribution prohibited)
-docs/
+# Course material (redistribution prohibited) — root only, keep data/docs/
+/docs/
 
 # Python
 __pycache__/
