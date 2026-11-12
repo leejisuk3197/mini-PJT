@@ -105,4 +105,5 @@ RAG, 구조화 출력, 가드레일은 아직 넣지 않는다.
 ## 시작 전에 정할 것
 
 - FastAPI 서버(1-6)는 `src/server.py`에 둔다 (2026-11-12 결정). 실행: `python -m uvicorn server:app --app-dir src`
-- 평가 실행기(6-1)를 둘 파일은 아직 정하지 않았다
+- 평가 실행기(6-1)는 `evaluation/run_eval.py`에 둔다 (2026-11-12 결정). 실행: `python evaluation/run_eval.py --round 1`
+  - 결과는 `evaluation/round{N}_results.json`에 케이스마다 저장되고, 멈추면 다음 실행에서 이어서 돈다
