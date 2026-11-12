@@ -45,11 +45,11 @@ RAG, 구조화 출력, 가드레일은 아직 넣지 않는다.
 
 - [x] **3-1. 옷차림 문서 6건 작성** — `data/docs/`에 기온 구간 / 비 / 눈·진눈깨비 / 체감온도·바람 / 활동별 / 아이템 설명 문서를 쓰고 doc_id를 붙인다
   - 확인: 파일 6개에 doc_id가 각각 있고, mockup에 쓴 id(guide_temp_bands, guide_snow_sleet, guide_feels_like 등)와 이름이 맞다
-- [ ] **3-2. 벡터 검색** — `src/retriever.py`에서 문서를 청크로 나누고 Titan v2 임베딩으로 Chroma에 저장한다
+- [x] **3-2. 벡터 검색** — `src/retriever.py`에서 문서를 청크로 나누고 Titan v2 임베딩으로 Chroma에 저장한다
   - 확인: "진눈깨비 출근" 검색 1위가 눈·진눈깨비 문서다
-- [ ] **3-3. 하이브리드 검색** — kiwipiepy 토크나이저 BM25와 Chroma를 앙상블로 합친다
+- [x] **3-3. 하이브리드 검색** — kiwipiepy 토크나이저 BM25와 Chroma를 앙상블로 합친다
   - 확인: "오후 외근" 검색 상위 3개 안에 활동별 문서가 있다
-- [ ] **3-4. `search_outfit_docs` 도구 연결** — 에이전트에 도구를 붙이고 검색 결과를 응답 `contexts`(doc_id, text)에 담는다
+- [x] **3-4. `search_outfit_docs` 도구 연결** — 에이전트에 도구를 붙이고 검색 결과를 응답 `contexts`(doc_id, text)에 담는다
   - 확인: 케이스 1 응답의 `contexts`가 비어 있지 않고 답변에 doc_id가 인용된다
 
 ---

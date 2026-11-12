@@ -10,7 +10,7 @@ from langchain.agents import create_agent
 from langchain_aws import ChatBedrockConverse
 from langchain_core.messages import AIMessage, ToolMessage
 
-from tools import calc_feels_like, get_weather, required_items
+from tools import calc_feels_like, get_weather, required_items, search_outfit_docs
 
 load_dotenv()
 
@@ -23,6 +23,8 @@ SYSTEM_PROMPT = """당신은 사내 직원의 출근 옷차림을 도와주는 '
 - 체감온도는 calc_feels_like 도구에 최저기온과 풍속을 넣어 계산하고, 계산 근거(기온·풍속)를 함께 밝힙니다.
 - get_weather가 error를 돌려주면 날씨 수치를 쓰지 말고 지원 도시나 가능한 날짜를 안내합니다.
 - 조회한 기온·강수확률·강수 유형을 근거로 출근 옷차림을 추천합니다. 조회하지 않은 날씨 수치는 지어내지 않습니다.
+- 옷차림을 추천하기 전에 search_outfit_docs로 관련 가이드 문서를 검색하고, 문서 내용에 근거해 추천합니다. 날씨(기온·강수)와 개인 상황(외근, 추위 탐 등)을 검색어에 담습니다.
+- 답변 끝에 근거로 쓴 문서의 doc_id를 '근거: guide_rain, guide_temp_bands'처럼 밝힙니다. 검색 결과에 없는 doc_id는 쓰지 않습니다.
 - 질문에 담긴 개인 상황(추위를 탄다, 외근이 있다 등)을 옷차림에 반영합니다.
 - 필수 준비물 줄('☂ 필수 준비물: ...')은 시스템이 자동으로 붙이므로 직접 쓰지 않습니다."""
 
@@ -42,7 +44,7 @@ def build_agent():
     """모델과 도메인 도구를 묶어 에이전트 그래프를 만든다."""
     return create_agent(
         model=build_model(),
-        tools=[get_weather, calc_feels_like],
+        tools=[get_weather, calc_feels_like, search_outfit_docs],
         system_prompt=SYSTEM_PROMPT,
     )
 
@@ -119,6 +121,19 @@ def build_required_line(items_by_date: dict[str, list[str]]) -> str | None:
     return REQUIRED_LINE_PREFIX + " / ".join(parts)
 
 
+def collect_contexts(trace: list[dict]) -> list[dict]:
+    """search_outfit_docs 결과에서 근거 청크를 모아 중복 없이 {doc_id, text} 목록으로 만든다."""
+    contexts, seen = [], set()
+    for step in trace:
+        if step["step"] != "tool:search_outfit_docs":
+            continue
+        for hit in step["output"].get("results", []):
+            if hit["text"] not in seen:
+                seen.add(hit["text"])
+                contexts.append({"doc_id": hit["doc_id"], "text": hit["text"]})
+    return contexts
+
+
 def run_query(agent, question: str) -> dict:
     """질문 하나를 에이전트로 처리해 answer, contexts, trace를 돌려준다."""
     result = agent.invoke({"messages": [{"role": "user", "content": question}]})
@@ -133,4 +148,4 @@ def run_query(agent, question: str) -> dict:
     if required_line:
         answer = f"{answer}\n\n{required_line}"
 
-    return {"answer": answer, "contexts": [], "trace": trace}
+    return {"answer": answer, "contexts": collect_contexts(trace), "trace": trace}

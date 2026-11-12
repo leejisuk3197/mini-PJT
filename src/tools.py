@@ -7,6 +7,8 @@ from pathlib import Path
 
 from langchain_core.tools import tool
 
+from retriever import search
+
 DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "weather_mock.json"
 
 # 상대 날짜 표현 → 기준일로부터 며칠 뒤인지
@@ -113,3 +115,18 @@ def calc_feels_like(temp: float, wind_speed: float) -> dict:
     feels = 13.12 + 0.6215 * temp - 11.37 * v + 0.3965 * temp * v
     return {"feels_like": round(feels, 1), "temp": temp, "wind_speed": wind_speed,
             "formula": "13.12 + 0.6215T - 11.37V^0.16 + 0.3965TV^0.16 (T: ℃, V: km/h)"}
+
+
+@tool
+def search_outfit_docs(query: str) -> dict:
+    """옷차림 가이드 문서(기온 구간, 비, 눈·진눈깨비, 체감온도, 활동별, 아이템)를 검색해 근거 청크를 돌려준다.
+
+    Args:
+        query: 검색 질의 (예: '진눈깨비 출근 옷차림', '영하 5도 추위 타는 사람', '오후 외근')
+    """
+    return {
+        "results": [
+            {"doc_id": d.metadata["doc_id"], "section": d.metadata["section"], "text": d.page_content}
+            for d in search(query)
+        ]
+    }
