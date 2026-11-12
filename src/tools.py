@@ -21,6 +21,12 @@ REQUIRED_BY_TYPE = {
     "sleet": ["우산", "장갑", "목도리"],
 }
 RAIN_PROB_THRESHOLD = 50
+WEEKDAYS = "월화수목금토일"
+
+
+def date_with_weekday(iso_date: str) -> str:
+    """ISO 날짜에 요일을 붙인다 (예: 2026-12-16(수))."""
+    return f"{iso_date}({WEEKDAYS[date.fromisoformat(iso_date).weekday()]})"
 
 
 def load_weather_data() -> dict:
@@ -69,7 +75,10 @@ def required_items(precip_type: str, precip_prob: int) -> list[str]:
 
 @tool
 def get_weather(city: str, date_text: str) -> dict:
-    """도시와 날짜로 하루 기준 날씨(기온, 강수확률, 강수 유형, 풍속)를 조회한다.
+    """도시와 날짜 하루의 날씨(기온, 강수확률, 강수 유형, 풍속)와 규칙으로 정한 필수 준비물을 조회한다.
+
+    한 번에 하루만 조회한다. '오늘부터 모레까지'처럼 기간을 물으면 사이 날짜까지 하루씩 모두 호출한다.
+    미지원 도시나 범위 밖 날짜도 이 도구로 확인하면 지원 도시·가능한 날짜가 담긴 error를 돌려준다.
 
     Args:
         city: 도시 이름 (예: 부산)
@@ -85,16 +94,22 @@ def get_weather(city: str, date_text: str) -> dict:
             "supported_cities": supported_cities,
             "message": f"{city}은(는) 지원하지 않는 도시입니다. 날씨 수치를 제공하지 말고 지원 도시를 안내하세요.",
         }
-    available_dates = list(city_data)
+    available_dates = [date_with_weekday(d) for d in city_data]
     iso_date = resolve_date(date_text, data["mock_today"])
     if iso_date is None or iso_date not in city_data:
         return {
             "error": "date_out_of_range",
             "date": date_text,
+            "today": date_with_weekday(data["mock_today"]),
             "available_dates": available_dates,
-            "message": "제공 범위 밖의 날짜입니다. 날씨 수치를 지어내지 말고 가능한 날짜를 안내하세요.",
+            "message": "제공 범위 밖의 날짜입니다. 날씨 수치와 요일을 지어내지 말고 가능한 날짜를 안내하세요.",
         }
-    return {"city": city.strip(), "date": iso_date, **city_data[iso_date]}
+    weather = city_data[iso_date]
+    return {
+        "city": city.strip(), "date": iso_date, "date_label": date_with_weekday(iso_date), **weather,
+        "required_items": required_items(weather["precip_type"], weather["precip_prob"]),
+        "required_items_note": "시스템 규칙으로 정한 그날의 필수 준비물. 본문에서 '필수'는 이 품목에만 쓴다. 빈 목록이면 필수 준비물이 없는 날이다.",
+    }
 
 
 @tool

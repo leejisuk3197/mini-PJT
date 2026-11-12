@@ -16,7 +16,8 @@ from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel, Field
 
-from tools import calc_feels_like, get_weather, load_weather_data, required_items, search_outfit_docs
+from tools import (calc_feels_like, date_with_weekday, get_weather, load_weather_data, required_items,
+                   search_outfit_docs)
 
 load_dotenv()
 
@@ -30,7 +31,8 @@ ItemId = Literal[tuple(ITEM_CATALOG)]
 _WEATHER = load_weather_data()
 SUPPORTED_CITIES = "·".join(_WEATHER["cities"])
 _DATES = sorted(next(iter(_WEATHER["cities"].values())))
-SUPPORTED_DATES = f"{_DATES[0]} ~ {_DATES[-1]} (오늘={_WEATHER['mock_today']})"
+SUPPORTED_DATES = (f"{date_with_weekday(_DATES[0])} ~ {date_with_weekday(_DATES[-1])} "
+                   f"(오늘={date_with_weekday(_WEATHER['mock_today'])})")
 
 SERVICE_SCOPE = (
     f"웨더핏 에이전트는 {SUPPORTED_CITIES}의 {SUPPORTED_DATES} 날씨와 출근 옷차림을 안내합니다. "
@@ -43,10 +45,13 @@ SYSTEM_PROMPT = f"""지원 범위: {SUPPORTED_CITIES} / {SUPPORTED_DATES}
 - 항상 정중한 존댓말로 답합니다.
 - 질문에서 도시와 날짜를 찾아 get_weather 도구로 날씨를 먼저 조회합니다. 날짜는 '오늘', '내일', '모레' 또는 YYYY-MM-DD로 넘깁니다.
 - 여러 날을 물으면 날짜마다, 여러 도시를 물으면 도시마다 get_weather를 따로 호출하고, 답변도 날짜별로 나눠 씁니다.
+- '오늘부터 모레까지'처럼 기간을 물으면 시작일과 끝일만이 아니라 사이 날짜까지 하루도 빠짐없이 조회합니다 (예: 오늘, 내일, 모레 세 번).
+- 질문에 도시와 날짜가 있으면, 지원 목록에 없는 도시나 범위 밖 날짜로 보여도 먼저 get_weather로 확인하고 그 결과에 따라 답합니다. 요일은 도구 결과의 날짜 표기만 씁니다.
 - 체감온도는 calc_feels_like 도구에 최저기온과 풍속을 넣어 계산하고, 계산 근거(기온·풍속)를 함께 밝힙니다.
 - get_weather가 error를 돌려주면 날씨 수치를 쓰지 말고 지원 도시나 가능한 날짜를 안내합니다.
 - 조회한 기온·강수확률·강수 유형을 근거로 출근 옷차림을 추천합니다. 조회하지 않은 날씨 수치는 지어내지 않습니다.
-- 옷차림을 추천하기 전에 search_outfit_docs로 관련 가이드 문서를 검색하고, 문서 내용에 근거해 추천합니다. 날씨(기온·강수)와 개인 상황(외근, 추위 탐 등)을 검색어에 담습니다.
+- 날씨를 조회한 뒤에는 질문이 옷차림이든 우산 같은 준비물이든 반드시 search_outfit_docs로 관련 가이드 문서를 검색하고, 문서 내용에 근거해 답합니다. 날씨(기온·강수)와 개인 상황(외근, 추위 탐 등)을 검색어에 담습니다.
+- get_weather 결과의 required_items가 그날의 필수 준비물입니다. 본문에서 '필수', '꼭 챙기세요' 같은 표현은 이 목록의 품목에만 쓰고, 목록에 있는 품목을 '필요 없다'거나 '선택'이라고 쓰지 않습니다. 목록에 없는 품목은 '권장'으로 씁니다.
 - 답변 끝에 근거로 쓴 문서의 doc_id를 '근거: guide_rain, guide_temp_bands'처럼 밝힙니다. 검색 결과에 없는 doc_id는 쓰지 않습니다.
 - 질문에 담긴 개인 상황(추위를 탄다, 외근이 있다 등)을 옷차림에 반영합니다.
 - 필수 준비물 줄('☂ 필수 준비물: ...')은 시스템이 자동으로 붙이므로 직접 쓰지 않습니다.
