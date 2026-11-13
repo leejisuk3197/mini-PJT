@@ -1,0 +1,73 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "12개 패턴 예시: 웨더핏 출장 비서",
+    "output": ".archify/workflow-12-patterns-20261113-165004/twelve-patterns.html",
+    "locale": "ko",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    { "id": "user", "label": "사용자 · 화면" },
+    { "id": "guard", "label": "입력 가드레일", "variant": "exception" },
+    { "id": "boss", "label": "계획 · Supervisor" },
+    { "id": "agents", "label": "서브 에이전트" },
+    { "id": "tools", "label": "도구 · RAG · MCP" },
+    { "id": "obs", "label": "기록 · 평가" }
+  ],
+  "phases": [
+    { "id": "intake", "label": "받기 · 계획", "fromCol": 0, "toCol": 1 },
+    { "id": "work", "label": "위임 · 실행 · 승인", "fromCol": 2, "toCol": 4, "variant": "emphasis" },
+    { "id": "answer", "label": "답 정리", "fromCol": 5, "toCol": 5 }
+  ],
+  "mainPath": ["question", "inguard", "plan", "supervisor", "trip", "hitl", "mcp", "outmw", "card", "final"],
+  "nodes": [
+    { "id": "question", "lane": "user", "col": 0, "type": "external", "label": "출장 질문", "sublabel": "월~수 부산 출장, 추위 탐" },
+    { "id": "final", "lane": "user", "col": 5, "type": "frontend", "label": "답변 화면", "sublabel": "날짜별 코디 + 신청 번호" },
+    { "id": "inguard", "lane": "guard", "col": 0, "type": "security", "label": "입력 가드레일", "sublabel": "인젝션·범위 검사", "tag": "#6" },
+    { "id": "memory", "lane": "boss", "col": 0, "type": "database", "label": "장기 메모리", "sublabel": "LangGraph Store", "tag": "#10" },
+    { "id": "plan", "lane": "boss", "col": 1, "type": "backend", "label": "Plan-Execute", "sublabel": "3일 × 코디·출장", "tag": "#10" },
+    { "id": "supervisor", "lane": "boss", "col": 2, "type": "backend", "label": "Supervisor", "sublabel": "작업을 나눠 위임", "tag": "#9" },
+    { "id": "card", "lane": "boss", "col": 5, "type": "backend", "label": "LCEL 구조화 출력", "sublabel": "Pydantic 코디 카드", "tag": "#1" },
+    { "id": "stylist", "lane": "agents", "col": 2, "type": "backend", "label": "코디 에이전트", "sublabel": "ReAct 도구 선택", "tag": "#2" },
+    { "id": "trip", "lane": "agents", "col": 3, "type": "backend", "label": "출장 에이전트", "sublabel": "ReAct 도구 선택", "tag": "#2" },
+    { "id": "hitl", "lane": "agents", "col": 4, "type": "security", "label": "사용자 승인", "sublabel": "interrupt() 대기", "tag": "#7 HITL" },
+    { "id": "outmw", "lane": "agents", "col": 5, "type": "security", "label": "출력 미들웨어", "sublabel": "PII 마스킹·재시도", "tag": "#8" },
+    { "id": "rag", "lane": "tools", "col": 1, "type": "database", "label": "옷차림 문서 RAG", "sublabel": "BM25 + 벡터 하이브리드", "tag": "#3" },
+    { "id": "multitool", "lane": "tools", "col": 2, "type": "cloud", "label": "날씨 API · 계산기", "sublabel": "도구 2~3개 결합", "tag": "#4" },
+    { "id": "mcp", "lane": "tools", "col": 4, "type": "messagebus", "label": "사내 출장 MCP", "sublabel": "출장 신청 등록", "tag": "#5" },
+    { "id": "eval", "lane": "obs", "col": 4, "type": "backend", "label": "평가", "sublabel": "RAGAS · LLM-as-Judge", "tag": "#12" },
+    { "id": "trace", "lane": "obs", "col": 5, "type": "database", "label": "LangSmith 트레이스", "sublabel": "모든 단계 기록", "tag": "#11" }
+  ],
+  "edges": [
+    { "id": "ask", "from": "question", "to": "inguard", "label": "질문" },
+    { "id": "pass", "from": "inguard", "to": "plan", "label": "통과", "variant": "emphasis" },
+    { "id": "recall", "from": "memory", "to": "plan", "label": "추위 탐", "variant": "dashed", "role": "branch" },
+    { "id": "steps", "from": "plan", "to": "supervisor", "label": "단계 목록", "variant": "emphasis" },
+    { "id": "delegate-style", "from": "supervisor", "to": "stylist", "label": "코디 위임", "role": "branch" },
+    { "id": "style-docs", "from": "stylist", "to": "rag", "label": "근거 검색", "role": "branch" },
+    { "id": "style-tools", "from": "stylist", "to": "multitool", "label": "날씨·체감", "role": "branch" },
+    { "id": "delegate-trip", "from": "supervisor", "to": "trip", "label": "출장 위임", "variant": "emphasis" },
+    { "id": "draft", "from": "trip", "to": "hitl", "label": "신청서 초안", "variant": "emphasis" },
+    { "id": "approved", "from": "hitl", "to": "mcp", "label": "승인 시", "variant": "security" },
+    { "id": "submitted", "from": "mcp", "to": "outmw", "label": "신청 번호", "variant": "emphasis" },
+    { "id": "answer", "from": "outmw", "to": "card", "label": "답변", "variant": "emphasis" },
+    { "id": "render", "from": "card", "to": "final", "label": "코디 카드", "variant": "emphasis" },
+    { "id": "log", "from": "outmw", "to": "trace", "label": "기록", "variant": "dashed", "role": "async" },
+    { "id": "score", "from": "trace", "to": "eval", "label": "평가 세트", "variant": "dashed", "role": "async" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "예시 질문", "items": [
+      "“다음 주 월~수 부산 출장이야. 날마다 옷차림·준비물 알려주고 사내 출장 신청도 해줘. 나 추위 많이 타.”",
+      "계획(#10)이 3일 × 코디·출장 작업으로 쪼개고, Supervisor(#9)가 두 에이전트에 나눠 맡긴다",
+      "코디 결과는 Supervisor 로 돌아와 출장 결과와 합쳐진다" ] },
+    { "dot": "rose", "title": "멈추는 곳", "items": [
+      "입력 가드레일(#6): 인젝션·범위 밖 질문은 여기서 끝",
+      "사용자 승인(#7): 거절하면 출장 신청 없이 코디만 안내",
+      "출력 미들웨어(#8): 전화번호·사번 같은 개인정보 가림" ] },
+    { "dot": "emerald", "title": "지금 웨더핏과 비교", "items": [
+      "이미 있음: #1 #2 #3 #4 #6 #8 #11 #12",
+      "이 예시로 추가: #5 MCP, #7 HITL, #9 Supervisor, #10 Plan-Execute·장기 메모리",
+      "#12 평가는 서비스 흐름 밖에서 트레이스·평가 세트로 따로 돈다" ] }
+  ]
+}

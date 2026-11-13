@@ -199,3 +199,15 @@
 ### 42. 진행 방식·실수 스킬 만들기 (/skill-creator)
 - 이번 프로젝트의 진행 순서(규칙 → 인터뷰 → 시안 → SERVICE·TASKS → 테스트 먼저 → 구현 → 평가 루프 → 기록·커밋·배포)와 실제로 겪은 실수·교훈을 스킬로 정리했다.
 - 새 파일(프로젝트 밖, 개인 스킬 폴더): `~/.claude/skills/agent-project-workflow/SKILL.md`, `references/lessons.md`
+
+### 43. 구조도·작업 기록 커밋과 push
+- history.md(40~42), 구조도(`.archify/.../candidate.json`, `weatherfit.html`)를 커밋하고 GitHub(origin/main)에 push 했다. 커밋 `61d4a11`.
+- 검사 기록 파일(*.json 영수증)과 `.hallmark/`, `.ouroboros/` 는 커밋하지 않았다. 스킬 폴더는 이 저장소 밖이라 대상이 아니다.
+
+### 44. 12개 패턴 예시 흐름도
+- 과정 가이드 §5 의 12개 패턴을 모두 쓰는 가상 예시 "웨더핏 출장 비서"(부산 3일 출장 코디 + 사내 출장 신청)를 만들고 흐름도로 그렸다. 각 상자에 패턴 번호(#1~#12)를 달았다.
+- 지금 웨더핏에 없는 #5 MCP, #7 HITL, #9 Supervisor, #10 Plan-Execute·장기 메모리를 더한 구성이다. 코드는 바꾸지 않았다.
+- 새 파일: `.archify/workflow-12-patterns-20261113-165004/` (candidate.json, twelve-patterns.html)
+
+### 45. chatting.md 갱신
+- 세션 기록에서 85번 이후 사용자 입력 38개(86~123)를 뽑아 주제별로 추가했다. 선택지로 답한 내용은 같은 줄에 `→ (선택)` 으로 붙였다.
