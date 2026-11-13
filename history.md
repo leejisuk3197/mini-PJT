@@ -71,3 +71,11 @@
 - `web/index.html` 삭제를 취소하고 CLAUDE.md, history.md, chatting.md 를 커밋했다.
 - 태그 `1차-완료` 를 달고 GitHub(origin/main)에 push 했다.
 - `.hallmark/`, `.ouroboros/` 는 도구가 만든 캐시라 커밋하지 않았다.
+
+### 14. 더블클릭 실행 파일
+- `run.bat` 을 만들었다. 더블클릭하면 서버가 켜지고, 서버가 응답하면 브라우저에 http://127.0.0.1:8000/ 이 열린다.
+- 상위 폴더의 `.venv` 파이썬을 먼저 쓰고, 없으면 기본 python 을 쓴다.
+- README 실행 방법에 한 줄 추가했다.
+
+### 15. 실행 파일 커밋과 태그
+- run.bat, README.md, history.md 를 커밋하고 태그 `실행파일-추가` 를 달아 GitHub(origin/main)에 push 했다.

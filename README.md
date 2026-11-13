@@ -69,6 +69,7 @@ pip install --no-deps ragas==0.4.3      # 평가용. 이유는 requirements.txt 
 
 # 3. 서버
 python -m uvicorn server:app --app-dir src --port 8000
+#    Windows 에서는 run.bat 을 더블클릭하면 서버가 켜지고 화면(http://127.0.0.1:8000/)이 자동으로 열린다
 
 # 4. 질의 (요청 본문은 UTF-8)
 curl -X POST http://127.0.0.1:8000/query -H "Content-Type: application/json" \
