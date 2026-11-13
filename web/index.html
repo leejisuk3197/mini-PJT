@@ -290,7 +290,12 @@
       const body = { question, date: DAY_LABELS[state.dayIndex] };
       if (state.sido) body.location = { sido: state.sido, sigungu: state.sigungu };
       const res = await fetch("/query", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      if (!res.ok) throw new Error(`서버 오류 ${res.status}: ${(await res.text()).slice(0, 300)}`);
+      if (!res.ok) {
+        const text = await res.text();
+        let detail = "";
+        try { detail = JSON.parse(text).detail; } catch (_) { /* JSON 이 아니면 원문을 보여 준다 */ }
+        throw new Error(typeof detail === "string" && detail ? detail : `서버 오류 ${res.status}: ${text.slice(0, 300)}`);
+      }
       render(await res.json());
       $("status").textContent = `완료 · ${((Date.now() - started) / 1000).toFixed(1)}초`;
     } catch (e) {

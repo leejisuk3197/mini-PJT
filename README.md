@@ -95,7 +95,7 @@ curl -X POST http://127.0.0.1:8000/query -H "Content-Type: application/json" \
 curl "http://127.0.0.1:8000/weather?sido=서울특별시&sigungu=강남구&date=오늘"   # AI 없이 날씨만
 curl "http://127.0.0.1:8000/regions"                                            # 지역 목록 + 서버 기준 오늘
 
-# 5. 실시간 기능 자동 테스트 (59건, 인터넷·AI 모델 없이 몇 초)
+# 5. 실시간 기능 자동 테스트 (60건, 인터넷·AI 모델 없이 몇 초)
 python -m pytest evaluation/test_live.py -v
 
 # 6. 평가 (항상 데모 모드로 돈다. run_eval.py 가 WEATHER_SOURCE=mock 으로 바꾼다)
@@ -104,6 +104,15 @@ python evaluation/run_eval.py --round 2 --ragas    # RAGAS 4개 지표
 #    --url 로 서버에 보내려면 서버를 데모 모드로 띄운다: WEATHER_SOURCE=mock python -m uvicorn server:app --app-dir src
 ```
 - 처음 검색할 때 `chroma_db/`에 임베딩을 만들고, 이후에는 재사용한다
+- `DAILY_QUERY_LIMIT`(기본 100): 하루 `/query` 질문 수 한도. 넘으면 429 로 안내한다. 0 이면 제한 없음. `/weather` 는 제한하지 않는다
+- `BM25_TOKENIZER`(기본 kiwi): `light` 면 형태소 분석기 없이 낱말·두 글자 조각으로 BM25 검색을 한다 (메모리 약 820MB → 200MB)
+
+### 배포 (Render 무료 요금제)
+- 설정 파일: `Dockerfile`(서버 실행 패키지만, `BM25_TOKENIZER=light`), `render.yaml`(Blueprint), `.dockerignore`
+- Render 대시보드 > **New > Blueprint** > 이 GitHub 저장소 선택 > `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` 입력 > Apply
+  - AWS 키는 Bedrock 호출 권한만 있는 별도 키를 권장한다. 키는 저장소에 넣지 않는다
+- 주소는 `https://<서비스 이름>.onrender.com`. 15분 동안 접속이 없으면 잠들고, 다음 접속 때 1분쯤 걸려 깨어난다
+- 하루 질문 수 카운터와 `chroma_db/`는 서버가 다시 켜질 때 초기화된다 (문서 임베딩은 첫 검색 때 다시 만든다)
 - Windows Git Bash에서 curl에 한글을 직접 넣으면 400이 날 수 있다. 그때는 요청 본문을 UTF-8 파일로 만들어 `--data-binary @파일`로 보낸다
 
 ## RAGAS 평가 결과

@@ -126,12 +126,17 @@ def condition_label(weather_code: int) -> str:
 
 
 def fetch_open_meteo(lat: float, lon: float) -> dict:
-    """Open-Meteo 에서 좌표의 3일치 하루 예보를 받는다 (한국 시간, 풍속 m/s)."""
+    """Open-Meteo 에서 좌표의 3일치 하루 예보를 받는다 (한국 시간, 풍속 m/s). 일시적인 실패에 대비해 한 번 더 시도한다."""
     params = {"latitude": lat, "longitude": lon, "daily": ",".join(OPEN_METEO_DAILY), "timezone": "Asia/Seoul",
               "forecast_days": FORECAST_DAYS, "wind_speed_unit": "ms"}
     url = f"{OPEN_METEO_URL}?{urllib.parse.urlencode(params)}"
-    with urllib.request.urlopen(url, timeout=10) as res:
-        return json.load(res)
+    for attempt in range(2):
+        try:
+            with urllib.request.urlopen(url, timeout=8) as res:
+                return json.load(res)
+        except OSError:
+            if attempt == 1:
+                raise
 
 
 def clear_weather_cache() -> None:

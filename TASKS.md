@@ -151,6 +151,18 @@ RAG, 구조화 출력, 가드레일은 아직 넣지 않는다.
 - [x] **8-10. 문서 갱신** — README 실행 방법에 `WEATHER_SOURCE`, 자동 테스트 실행, 평가할 때 데모 모드로 서버 띄우는 방법을 적는다. 실시간 기능의 패턴·아키텍처도 README에 반영한다
   - 확인: README만 보고 실시간 화면, 데모 모드 평가, 자동 테스트를 각각 실행할 수 있다
 
+## 묶음 9 · 배포 (Render 무료 요금제, 2026-11-13 추가)
+
+- [x] **9-1. 메모리 줄이기** — Render 무료 요금제(512MB)에 맞게 서버 메모리를 줄인다
+  - 측정: 형태소 분석기 Kiwi 약 515MB, AWS·LangChain 약 97MB, chromadb 약 86MB. `BM25_TOKENIZER=light`(낱말·두 글자 조각)로 Kiwi 를 빼고, Kiwi 는 쓸 때만 불러오게 했다
+  - 확인: light 서버가 질문 1건 처리 후 약 200MB (기존 약 820MB). 하이브리드 검색 결과는 kiwi 와 같다 ("진눈깨비 출근", "오후 외근")
+- [x] **9-2. 하루 질문 수 제한** — `DAILY_QUERY_LIMIT`(기본 100)을 넘으면 `/query` 가 429 와 안내 문구를 돌려준다. `/weather` 는 제한하지 않는다
+  - 확인: `test_하루_질문_수_제한` 통과 (테스트 60건)
+- [x] **9-3. 배포 파일** — `Dockerfile`(서버 실행 패키지만 설치), `.dockerignore`, `render.yaml`(Blueprint, AWS 키는 Render 화면에서 입력)
+  - 확인: 이 PC에 Docker 가 없어 이미지 빌드는 Render 에서 처음 확인한다
+- [ ] **9-4. Render 에 배포** — 사용자 Render 계정에서 Blueprint 로 만들고 AWS 키를 입력한다
+  - 확인: `https://<이름>.onrender.com` 에서 화면이 열리고, 위치 허용 → 날씨 상자, 질문 → 코디가 나온다
+
 테스트와 작업의 연결:
 | 작업 | test_live.py 의 테스트 |
 |---|---|

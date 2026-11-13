@@ -1,0 +1,27 @@
+# Render 배포 설정 (Blueprint). Render 대시보드 > New > Blueprint 에서 이 저장소를 고르면 아래대로 만들어진다.
+# AWS 키(sync: false)는 저장소에 넣지 않고, 만들 때 Render 화면에서 직접 입력한다.
+services:
+  - type: web
+    name: weatherfit
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /regions
+    envVars:
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_DEFAULT_REGION
+        value: us-west-2
+      - key: BEDROCK_MODEL_ID
+        value: us.anthropic.claude-haiku-4-5-20251001-v1:0
+      - key: CARD_MODEL_ID
+        value: us.anthropic.claude-haiku-4-5-20251001-v1:0
+      - key: WEATHER_SOURCE
+        value: live
+      - key: BM25_TOKENIZER
+        value: light
+      - key: DAILY_QUERY_LIMIT
+        value: "100"

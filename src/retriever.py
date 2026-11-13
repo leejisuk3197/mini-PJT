@@ -6,7 +6,6 @@ import threading
 from pathlib import Path
 
 from dotenv import load_dotenv
-from kiwipiepy import Kiwi
 from langchain_aws import BedrockEmbeddings
 from langchain_chroma import Chroma
 from langchain_classic.retrievers import EnsembleRetriever
@@ -25,7 +24,9 @@ TOP_K = 3
 HYBRID_WEIGHTS = [0.3, 0.7]  # [BM25 비중, 벡터 비중]
 KEEP_POS_TAGS = {"NNG", "NNP", "NNB", "NR", "NP", "VV", "VA", "SL", "SN"}
 
-kiwi = Kiwi()
+# BM25 토크나이저: kiwi(기본, 형태소 분석. 메모리 약 500MB) / light(낱말 + 두 글자 조각. 메모리가 작은 배포용)
+# kiwipiepy 가 설치돼 있지 않으면 light 를 쓴다. Kiwi 는 처음 쓸 때 한 번만 만든다.
+_kiwi = None
 _hybrid_retriever = None
 _build_lock = threading.Lock()  # 도구가 병렬 호출돼도 검색기를 한 번만 만들도록 막는다
 
@@ -97,9 +98,42 @@ def build_vector_retriever(chunks: list[Document], k: int = TOP_K):
     return build_vectorstore(chunks).as_retriever(search_kwargs={"k": k})
 
 
-def korean_tokenizer(text: str) -> list[str]:
+def tokenizer_name() -> str:
+    """쓸 BM25 토크나이저 이름. BM25_TOKENIZER=light 이거나 kiwipiepy 가 없으면 'light'."""
+    if os.getenv("BM25_TOKENIZER", "kiwi").strip().lower() == "light":
+        return "light"
+    try:
+        import kiwipiepy  # noqa: F401
+    except ImportError:
+        return "light"
+    return "kiwi"
+
+
+def kiwi_tokenizer(text: str) -> list[str]:
     """kiwi 형태소 분석으로 명사·어간·숫자·외래어만 남기는 BM25용 토크나이저."""
-    return [t.form for t in kiwi.tokenize(text) if t.tag in KEEP_POS_TAGS]
+    global _kiwi
+    if _kiwi is None:
+        from kiwipiepy import Kiwi
+        _kiwi = Kiwi()
+    return [t.form for t in _kiwi.tokenize(text) if t.tag in KEEP_POS_TAGS]
+
+
+def light_tokenizer(text: str) -> list[str]:
+    """형태소 분석 없이 낱말과 한글 두 글자 조각으로 나누는 가벼운 BM25용 토크나이저.
+
+    '진눈깨비가' → 진눈깨비가, 진눈, 눈깨, 깨비, 비가 처럼 조사가 붙어도 조각이 겹쳐 검색된다.
+    """
+    tokens = []
+    for word in re.findall(r"[가-힣]+|[a-zA-Z]+|\d+", text.lower()):
+        tokens.append(word)
+        if re.fullmatch(r"[가-힣]{3,}", word):
+            tokens += [word[i:i + 2] for i in range(len(word) - 1)]
+    return tokens
+
+
+def korean_tokenizer(text: str) -> list[str]:
+    """설정에 따라 kiwi 또는 light 토크나이저로 BM25용 낱말 목록을 만든다."""
+    return light_tokenizer(text) if tokenizer_name() == "light" else kiwi_tokenizer(text)
 
 
 def build_bm25_retriever(chunks: list[Document], k: int = TOP_K) -> BM25Retriever:

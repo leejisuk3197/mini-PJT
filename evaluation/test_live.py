@@ -386,6 +386,16 @@ class TestServer:
         assert res.status_code == 200
         assert seen["location"] is None and seen["date"] is None
 
+    def test_하루_질문_수_제한(self, client, monkeypatch):
+        c, _ = client
+        server = load("server")
+        monkeypatch.setenv("DAILY_QUERY_LIMIT", "2")
+        server._usage.update(date=None, count=0)
+        codes = [c.post("/query", json={"question": "뭐 입을까?"}).status_code for _ in range(3)]
+        assert codes == [200, 200, 429]
+        assert c.get("/weather", params={"sido": "서울특별시", "sigungu": "강남구"}).status_code == 200  # 날씨 상자는 제한 없음
+        server._usage.update(date=None, count=0)
+
 
 # ---------------------------------------------------------------- 8-8 브라우저의 가장 가까운 시·군·구 계산
 
