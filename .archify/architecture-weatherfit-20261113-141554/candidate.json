@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "웨더핏 에이전트 구조 (실시간 모드 · Render 배포)",
+    "output": ".archify/architecture-weatherfit-20261113-141554/weatherfit.html",
+    "locale": "ko",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/leejisuk3197/mini-PJT.git",
+      "provider": "github",
+      "link_mode": "web",
+      "revision": "5665901f303e8465045cdb5ef96a0ddf48967101"
+    }
+  },
+  "components": [
+    { "id": "browser", "type": "frontend", "label": "웹 화면", "sublabel": "GPS → 가까운 시군구", "pos": [40, 60], "size": [156, 64],
+      "sources": [ { "path": "web/index.html", "line": 394, "end_line": 411 }, { "path": "web/regions.js", "line": 15, "end_line": 24 } ] },
+    { "id": "server", "type": "backend", "label": "FastAPI 서버", "sublabel": "하루 100건 제한", "pos": [296, 60], "size": [156, 64],
+      "sources": [ { "path": "src/server.py", "line": 82, "end_line": 89 }, { "path": "src/server.py", "line": 20, "end_line": 30 } ] },
+    { "id": "planner", "type": "security", "label": "조회 계획 (코드)", "sublabel": "plan_weather_calls", "pos": [552, 60], "size": [156, 64],
+      "sources": [ { "path": "src/agent.py", "line": 596, "end_line": 622 }, { "path": "src/agent.py", "line": 640, "end_line": 669 } ] },
+    { "id": "agent", "type": "backend", "label": "LangChain 에이전트", "sublabel": "create_agent · 미들웨어 5", "pos": [808, 60], "size": [156, 64],
+      "sources": [ { "path": "src/agent.py", "line": 142, "end_line": 154 } ] },
+    { "id": "llm", "type": "cloud", "label": "Claude Haiku 4.5", "sublabel": "Bedrock 채팅 모델", "pos": [1064, 60], "size": [156, 64],
+      "sources": [ { "path": "src/agent.py", "line": 127, "end_line": 133 }, { "path": "render.yaml", "line": 16, "end_line": 21 } ] },
+    { "id": "regions", "type": "database", "label": "지역 데이터", "sublabel": "regions.json · 256곳", "pos": [296, 240], "size": [156, 64],
+      "sources": [ { "path": "src/regions.py", "line": 58, "end_line": 66 }, { "path": "src/tools.py", "line": 187, "end_line": 192 } ] },
+    { "id": "weather", "type": "backend", "label": "날씨 조회 도구", "sublabel": "get_weather · 30분 캐시", "pos": [552, 240], "size": [156, 64],
+      "sources": [ { "path": "src/tools.py", "line": 171, "end_line": 184 }, { "path": "src/tools.py", "line": 147, "end_line": 155 } ] },
+    { "id": "retriever", "type": "backend", "label": "옷차림 문서 검색", "sublabel": "BM25 + 벡터 (0.3:0.7)", "pos": [808, 240], "size": [156, 64],
+      "sources": [ { "path": "src/tools.py", "line": 282, "end_line": 294 }, { "path": "src/retriever.py", "line": 146, "end_line": 165 } ] },
+    { "id": "titan", "type": "cloud", "label": "Titan 임베딩 v2", "sublabel": "Bedrock 임베딩", "pos": [1064, 240], "size": [156, 64],
+      "sources": [ { "path": "src/retriever.py", "line": 72, "end_line": 77 } ] },
+    { "id": "chroma", "type": "database", "label": "Chroma 벡터 DB", "sublabel": "data/docs 문서 청크", "pos": [808, 410], "size": [156, 64],
+      "sources": [ { "path": "src/retriever.py", "line": 80, "end_line": 93 }, { "path": "src/retriever.py", "line": 36, "end_line": 49 } ] },
+    { "id": "openmeteo", "type": "external", "label": "Open-Meteo", "sublabel": "3일 하루 예보 API", "pos": [552, 580], "size": [156, 64],
+      "sources": [ { "path": "src/tools.py", "line": 128, "end_line": 140 } ] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "Render 무료 웹 서비스 (Docker)", "wraps": ["server", "planner", "agent", "regions", "weather", "retriever", "chroma"], "pad": 22 },
+    { "kind": "region", "label": "AWS us-west-2", "wraps": ["llm", "titan"], "pad": 18 }
+  ],
+  "connections": [
+    { "from": "browser", "to": "server", "label": "POST /query", "variant": "emphasis" },
+    { "from": "server", "to": "planner", "label": "입력 검사 후", "variant": "emphasis" },
+    { "from": "planner", "to": "agent", "label": "결과 주입", "variant": "emphasis" },
+    { "from": "agent", "to": "llm", "label": "답변 생성", "variant": "emphasis" },
+    { "from": "server", "to": "regions", "label": "/regions" },
+    { "from": "planner", "to": "weather", "label": "미리 호출" },
+    { "from": "weather", "to": "regions", "label": "좌표 찾기" },
+    { "from": "weather", "to": "openmeteo", "label": "HTTPS · 1회 재시도", "variant": "dashed" },
+    { "from": "agent", "to": "retriever", "label": "근거 검색" },
+    { "from": "retriever", "to": "titan", "label": "질의 임베딩" },
+    { "from": "retriever", "to": "chroma", "label": "벡터 검색" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "질문 하나가 답이 되는 순서", "items": [
+      "입력 검사(프롬프트 주입 차단) → 코드가 지역·날짜 결정",
+      "질문 속 지역이 화면 위치보다, 질문 속 날짜가 화면 날짜보다 우선",
+      "get_weather 를 코드가 미리 부르고, 모델은 문서를 찾아 옷차림 답변",
+      "응답은 answer · contexts · trace 세 키" ] },
+    { "dot": "amber", "title": "모델을 부르지 않고 끝나는 경우", "items": [
+      "GET /weather: 위쪽 날씨 상자용, 날씨 도구만 호출",
+      "같은 이름 지역이 여럿이면 되묻기, 해외 지역은 국내만 지원 안내",
+      "Open-Meteo 장애 시 날씨 수치 없이 안내 문구만",
+      "하루 100건을 넘으면 429 로 안내" ] },
+    { "dot": "emerald", "title": "배포 설정 (render.yaml)", "items": [
+      "512MB 무료 서버에 맞추려 BM25 는 가벼운 토크나이저(light) 사용",
+      "AWS 키 두 개는 저장소가 아니라 Render 화면에서만 입력",
+      "평가(run_eval.py)는 항상 데모 모드(mock) 로 실행" ] }
+  ]
+}

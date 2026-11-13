@@ -185,3 +185,17 @@
 - `src/server.py` 에 하루 질문 수 제한(`DAILY_QUERY_LIMIT`, 기본 100, 넘으면 429), 화면은 429 안내 문구를 그대로 보여 준다. 테스트 1건 추가 (60건 통과).
 - `src/tools.py` Open-Meteo 호출을 실패 시 한 번 더 시도하게 했다. 이 PC 네트워크에서 Open-Meteo 연결이 자주 시간 초과됐다 (curl·PowerShell 도 같음).
 - 새 파일: `Dockerfile`, `.dockerignore`, `render.yaml`. README 에 배포 방법, TASKS 에 묶음 9 를 적었다. Docker 가 없어 이미지 빌드는 Render 에서 처음 확인한다.
+
+### 39. 배포용 AWS 키 문의
+- 지금 `.env` 의 키(교육용 계정)를 Render 에 넣으면 동작은 하지만, 공개 서비스 사용량이 교육 계정에 붙고 교육이 끝나면 키가 막힐 수 있다고 안내했다. 쓰기 전에 강사·운영 측 허락을 받도록 권했다.
+
+### 40. 배포 파일 push
+- Render Blueprint 화면에서 "render.yaml not found on main branch" 오류. 배포 커밋 `5665901` 을 GitHub(origin/main)에 push 해 Dockerfile·render.yaml 이 main 에 올라간 것을 확인했다.
+
+### 41. 서비스 구조도 작성 (/archify)
+- 실시간 모드·Render 배포 기준으로 웨더핏 에이전트 구조를 그림(아키텍처 다이어그램)으로 만들었다. 각 상자에 소스 위치(커밋 `5665901`)를 연결했다.
+- 새 파일: `.archify/architecture-weatherfit-20261113-141554/` (candidate.json, weatherfit.html)
+
+### 42. 진행 방식·실수 스킬 만들기 (/skill-creator)
+- 이번 프로젝트의 진행 순서(규칙 → 인터뷰 → 시안 → SERVICE·TASKS → 테스트 먼저 → 구현 → 평가 루프 → 기록·커밋·배포)와 실제로 겪은 실수·교훈을 스킬로 정리했다.
+- 새 파일(프로젝트 밖, 개인 스킬 폴더): `~/.claude/skills/agent-project-workflow/SKILL.md`, `references/lessons.md`
