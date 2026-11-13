@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>웨더핏 에이전트 · 실시간 위치 시안</title>
+<style>
+  :root { --bg:#f5f7fa; --card:#fff; --ink:#1f2933; --sub:#616e7c; --line:#e4e7eb; --accent:#2563eb; --must:#b45309; --must-bg:#fef3c7; --ok:#047857; --ok-bg:#d1fae5; --warn:#b91c1c; --warn-bg:#fee2e2; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:"Pretendard","Malgun Gothic",system-ui,sans-serif; }
+  header { background:var(--card); border-bottom:1px solid var(--line); padding:14px 16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; }
+  header h1 { font-size:18px; margin:0; }
+  nav a { font-size:13px; color:var(--sub); margin-left:12px; text-decoration:none; }
+  nav a.on { color:var(--accent); font-weight:700; }
+  main { max-width:760px; margin:0 auto; padding:20px 16px 40px; }
+
+  /* 새로 추가: 위치·시각 바 */
+  .context { background:var(--card); border:1px solid #bfdbfe; border-radius:16px; padding:14px; margin-bottom:14px; box-shadow:0 4px 14px rgba(37,99,235,.08); }
+  .now { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; padding-bottom:12px; border-bottom:1px dashed var(--line); }
+  .now .clock { font-size:15px; font-weight:800; }
+  .now .clock small { font-size:12px; font-weight:600; color:var(--sub); margin-left:6px; }
+  .live { font-size:11px; font-weight:700; color:var(--ok); background:var(--ok-bg); border-radius:999px; padding:3px 9px; }
+  .live::before { content:"●"; margin-right:4px; animation:blink 1.6s infinite; }
+  @keyframes blink { 50% { opacity:.25; } }
+  .loc { display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding-top:12px; }
+  .loc .pin { font-size:22px; }
+  .loc .where { flex:1; min-width:180px; }
+  .loc .where b { font-size:18px; }
+  .loc .where .src { display:block; font-size:12px; color:var(--sub); margin-top:2px; }
+  .btn { font-size:13px; padding:7px 12px; border:1px solid var(--line); border-radius:999px; background:var(--card); color:var(--ink); cursor:pointer; }
+  .btn:hover { border-color:var(--accent); color:var(--accent); }
+  .btn.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .picker { display:none; gap:6px; flex-wrap:wrap; align-items:center; margin-top:10px; padding:8px 10px; background:#eff6ff; border-radius:10px; }
+  .picker.open { display:flex; }
+  .picker select { flex:0 1 170px; min-width:120px; padding:5px 8px; border:1px solid #bfdbfe; border-radius:8px; font-size:13px; background:#fff; }
+  .picker .note { flex-basis:100%; font-size:10px; color:var(--sub); }
+  .denied { display:none; margin-top:12px; padding:10px 12px; border-radius:10px; background:var(--warn-bg); color:var(--warn); font-size:13px; }
+  .denied.show { display:block; }
+  .days { display:flex; gap:6px; margin-top:10px; }
+  .days button { flex:0 1 auto; padding:5px 12px; border:1px solid var(--line); border-radius:999px; background:var(--card); cursor:pointer; font-size:12px; color:var(--ink); }
+  .days button b { display:inline; font-size:13px; margin-right:4px; }
+  .days button.on { border-color:var(--accent); background:#eff6ff; color:var(--accent); font-weight:700; }
+
+  .askbox { padding:16px; border-radius:18px; background:linear-gradient(135deg,#dbeafe,#eff6ff); border:2px solid var(--accent); box-shadow:0 8px 24px rgba(37,99,235,.18); }
+  .askbox .q-label { display:block; font-size:15px; font-weight:800; color:#1e3a8a; margin:0 0 10px 2px; }
+  .ask { display:flex; gap:8px; }
+  .ask input { flex:1; min-width:0; padding:15px 16px; border:2px solid #93c5fd; border-radius:12px; font-size:17px; font-weight:600; background:#fff; }
+  .ask input:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 4px rgba(37,99,235,.2); }
+  .ask button { padding:15px 22px; border:0; border-radius:12px; background:var(--accent); color:#fff; font-size:17px; font-weight:800; white-space:nowrap; cursor:pointer; box-shadow:0 4px 12px rgba(37,99,235,.35); }
+  .ask button:hover { background:#1d4ed8; }
+  .hint { font-size:12px; color:var(--sub); margin:6px 2px 18px; }
+
+  /* 기존 시안 01 과 같은 결과 영역 */
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px; margin-bottom:14px; }
+  .weather { display:flex; gap:12px; align-items:center; margin-top:12px; padding-top:12px; border-top:1px dashed var(--line); }
+  .weather .icon { font-size:36px; }
+  .weather .meta { flex:1; min-width:0; }
+  .weather .chips span { margin-top:0; margin-bottom:4px; }
+  .weather .meta .stamp { font-size:11px; color:var(--sub); }
+  .chips span { display:inline-block; background:var(--bg); border-radius:999px; padding:4px 10px; font-size:13px; margin:4px 6px 0 0; }
+  h2 { font-size:15px; margin:0 0 10px; }
+  ul { margin:0; padding-left:18px; line-height:1.8; }
+  .looks { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:10px; margin-top:14px; }
+  .item { border:1px solid var(--line); border-radius:12px; padding:12px 10px; text-align:center; background:linear-gradient(180deg,#f8fafc,#fff); }
+  .item .pic { font-size:42px; line-height:1.2; }
+  .item .name { font-size:13px; font-weight:700; margin-top:6px; }
+  .item .why { font-size:11px; color:var(--sub); margin-top:3px; }
+  .hero { display:flex; align-items:center; gap:18px; flex-wrap:wrap; margin-bottom:14px; padding:16px 18px; border-radius:18px; color:#fff;
+          background:linear-gradient(135deg,#1e3a8a 0%,#2563eb 55%,#60a5fa 100%); box-shadow:0 10px 28px rgba(37,99,235,.28); }
+  .hero .stack { display:grid; grid-template-columns:repeat(2,1fr); gap:2px 6px; font-size:32px; line-height:1.15; text-align:center; padding:8px 10px; border-radius:14px; background:rgba(255,255,255,.16); }
+  .hero .body { flex:1; min-width:220px; }
+  .hero .badge { display:inline-block; font-size:12px; font-weight:700; background:#fbbf24; color:#78350f; border-radius:999px; padding:3px 10px; }
+  .hero h2 { font-size:20px; margin:6px 0 4px; color:#fff; }
+  .hero p { margin:0; font-size:14px; line-height:1.55; color:#e0e7ff; }
+  .hero .tags span { display:inline-block; font-size:12px; background:rgba(255,255,255,.18); border-radius:999px; padding:3px 10px; margin:6px 6px 0 0; }
+  .ctx { font-size:13px; color:var(--sub); }
+  .ctx code { background:var(--bg); padding:1px 6px; border-radius:4px; }
+
+  /* 시안 설명 */
+  .memo { border:2px dashed #94a3b8; background:#f8fafc; border-radius:14px; padding:16px 18px; margin-top:24px; font-size:13px; line-height:1.7; }
+  .memo h2 { font-size:14px; }
+  .memo .tag { display:inline-block; font-size:11px; font-weight:700; color:#fff; background:#64748b; border-radius:999px; padding:1px 8px; margin-right:4px; }
+  .memo .new { background:var(--accent); }
+  .memo .gone { background:#9ca3af; text-decoration:line-through; }
+</style>
+</head>
+<body>
+<header>
+  <h1>☔ 웨더핏 에이전트</h1>
+  <nav>
+    <a href="01_single_day.html">하루 추천(기존)</a>
+    <a href="04_live_location.html" class="on">실시간 위치 · 시간(개선안)</a>
+  </nav>
+</header>
+<main>
+
+  <!-- ① 새로 추가: 실시간 시각 + 현재 위치 + 시군구 변경 -->
+  <section class="context" aria-label="현재 위치와 시각">
+    <div class="now">
+      <div class="clock" id="clock">2026년 11월 13일(금) 오전 9:30<small>지금 기준</small></div>
+      <span class="live">실시간</span>
+    </div>
+
+    <div class="loc">
+      <span class="pin">📍</span>
+      <div class="where">
+        <b id="place">서울특별시 강남구</b>
+        <span class="src" id="placeSrc">현재 위치에서 자동으로 찾았어요 · 정확도 약 50m</span>
+      </div>
+      <button class="btn" id="relocate" type="button">⟳ 현재 위치</button>
+      <button class="btn primary" id="change" type="button">지역 변경</button>
+    </div>
+
+    <div class="picker" id="picker">
+      <select id="sido" aria-label="시/도"></select>
+      <select id="sigungu" aria-label="시/군/구"></select>
+      <span class="note">시안에는 일부 지역만 넣었습니다. 실제 화면에는 전국 시/도 16곳, 시·군·구 256곳이 들어갑니다.</span>
+    </div>
+
+    <div class="denied" id="denied">
+      위치 권한이 꺼져 있어 현재 위치를 찾지 못했어요. <b>지역 변경</b>에서 시/도와 시·군·구를 직접 골라 주세요.
+    </div>
+
+    <div class="days" id="days" aria-label="날짜 선택">
+      <button type="button" class="on"><b>오늘</b><span>11/13(금)</span></button>
+      <button type="button"><b>내일</b><span>11/14(토)</span></button>
+      <button type="button"><b>모레</b><span>11/15(일)</span></button>
+    </div>
+
+    <!-- ② 날씨: 위 위치·날짜로 바로 조회됨 (같은 상자 안) -->
+    <div class="weather">
+      <div class="icon">⛅</div>
+      <div class="meta">
+        <div class="chips">
+          <span>구름많음 · 강수확률 20%</span><span>최저 4℃ / 최고 14℃</span><span>체감 최저 2℃</span><span>일교차 10℃</span>
+        </div>
+        <div class="stamp">기상청 단기예보 · 오전 8시 발표 · 1시간 전 갱신</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ③ 질문: 날씨를 본 다음 물어봄. 도시 이름을 안 써도 위 위치·날짜가 함께 전달됨 -->
+  <div class="askbox">
+    <label class="q-label" for="q">👕 오늘 뭐 입을지 물어보세요</label>
+    <div class="ask">
+      <input id="q" value="출근하는데 뭐 입을까? 추위를 좀 타요">
+      <button type="button">물어보기 →</button>
+    </div>
+  </div>
+  <p class="hint">질문에 지역이나 날짜를 쓰지 않아도 위에서 고른 <b id="hintPlace">서울특별시 강남구</b> · <b id="hintDay">오늘</b> 기준으로 답합니다. 질문에 다른 지역을 쓰면 그 지역이 우선합니다.</p>
+
+  <!-- ④ 결과: 기존 시안 01 구성 그대로 -->
+
+  <section class="hero">
+    <div class="stack"><span>🧣</span><span>🧥</span><span>👖</span><span>👟</span></div>
+    <div class="body">
+      <span class="badge">✨ 오늘의 코디</span>
+      <h2>차콜 울코트 × 크림 니트</h2>
+      <p>최저 4℃(체감 2℃), 최고 14℃로 일교차가 큰 날. 벗기 쉬운 울코트 안에 얇은 니트를 겹쳐 입고, 추위를 타시니 머플러를 더하세요.</p>
+      <div class="tags"><span>#일교차큰날</span><span>#레이어드</span><span>#추위타는분</span><span>#강남구</span></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>추천 옷차림</h2>
+    <ul>
+      <li>상의: 크림 니트 + 차콜 울코트 (낮에는 코트를 벗어도 되게)</li>
+      <li>하의: 기모 안감 슬랙스</li>
+      <li>신발: 스니커즈</li>
+      <li>소품: 얇은 머플러 (체감 최저 2℃)</li>
+    </ul>
+    <div class="looks">
+      <div class="item"><div class="pic">🧥</div><div class="name">울코트</div><div class="why">아침 찬 바람</div></div>
+      <div class="item"><div class="pic">🧶</div><div class="name">얇은 니트</div><div class="why">낮엔 코트 벗기</div></div>
+      <div class="item"><div class="pic">👖</div><div class="name">기모 슬랙스</div><div class="why">추위 타는 분</div></div>
+      <div class="item"><div class="pic">👟</div><div class="name">스니커즈</div><div class="why">맑은 길</div></div>
+      <div class="item"><div class="pic">🧣</div><div class="name">얇은 머플러</div><div class="why">체감 2℃</div></div>
+    </div>
+  </section>
+  <!-- 비·눈이 없는 날이라 '☂ 필수 준비물' 줄은 나오지 않음 (기존 규칙 그대로) -->
+
+  <section class="card ctx">
+    <h2>근거 문서</h2>
+    <div>· <code>guide_temp_bands</code> 10~14℃ 구간: 코트, 니트, 레이어드…</div>
+    <div>· <code>guide_daily_range</code> 일교차 10℃ 이상이면 벗기 쉬운 겉옷…</div>
+    <div>· <code>weather:서울특별시 강남구:2026-11-13</code> 실시간 예보, precip_prob=20</div>
+  </section>
+
+  <!-- 시안 설명 (실제 화면에는 없음) -->
+  <section class="memo">
+    <h2>📝 시안 메모 — 기존 화면에서 바뀌는 점</h2>
+    <div><span class="tag new">추가</span> 맨 위 <b>실시간 시각</b>: 현재 시각을 1초마다 보여 줍니다. 오늘/내일/모레 버튼은 서버가 알려 주는 오늘 날짜(한국 시간)로 만듭니다. 날씨는 하루 기준 값만 보여 줍니다.</div>
+    <div><span class="tag new">추가</span> <b>현재 위치</b>: 화면을 열면 위치 권한을 물어보고, 허용하면 좌표를 시/도 · 시·군·구 이름으로 바꿔 보여 줍니다.</div>
+    <div><span class="tag new">추가</span> <b>지역 변경</b>: 시/도 → 시·군·구 두 단계로 고릅니다. 위치 권한을 거부하면 이 선택으로 대신합니다.</div>
+    <div><span class="tag new">추가</span> 날씨에 <b>예보 발표 시각</b>을 적어, 실시간 값이라는 것을 보여 줍니다.</div>
+    <div><span class="tag new">변경</span> 위치·날짜와 날씨를 <b>한 상자</b>로 합쳤습니다. 지역·날짜가 겹쳐 보이던 날씨 카드 제목은 뺐습니다.</div>
+    <div><span class="tag new">변경</span> 순서: 위치·날짜·날씨 → <b>질문</b> → 코디 결과. 날씨를 먼저 보고 질문하게 합니다.</div>
+    <div><span class="tag gone">삭제</span> "지원 도시: 서울·부산·강릉·제주·대전" 띠와 "기준일 2026-12-15, 데모 데이터" 문구</div>
+    <div><span class="tag">유지</span> 오늘의 코디, 추천 옷차림, 아이템 카드, 필수 준비물 줄, 근거 문서 구성은 기존 시안 01과 같습니다.</div>
+    <p style="margin:10px 0 0"><b>상태 미리보기:</b>
+      <button class="btn" type="button" data-state="ok">위치 찾음</button>
+      <button class="btn" type="button" data-state="denied">위치 권한 거부</button>
+    </p>
+  </section>
+</main>
+
+<script>
+  // 시안용 지역 데이터 (일부만). 실제로는 전국 시/도 16곳, 시·군·구 256곳.
+  const REGIONS = {
+    "서울특별시": ["강남구", "종로구", "중구", "마포구", "영등포구", "송파구"],
+    "부산광역시": ["해운대구", "부산진구", "중구", "남구"],
+    "대전광역시": ["유성구", "서구", "중구"],
+    "경기도": ["수원시 영통구", "성남시 분당구", "용인시 수지구", "고양시 일산동구"],
+    "강원특별자치도": ["강릉시", "춘천시", "원주시"],
+    "제주특별자치도": ["제주시", "서귀포시"],
+  };
+  const WEEK = ["일", "월", "화", "수", "목", "금", "토"];
+  const $ = (id) => document.getElementById(id);
+  let place = "서울특별시 강남구";
+  let dayIndex = 0;
+
+  // 실시간 시각
+  function tick() {
+    const d = new Date();
+    const h = d.getHours(), m = String(d.getMinutes()).padStart(2, "0"), s = String(d.getSeconds()).padStart(2, "0");
+    const ampm = h < 12 ? "오전" : "오후", h12 = h % 12 || 12;
+    $("clock").innerHTML = `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일(${WEEK[d.getDay()]}) ${ampm} ${h12}:${m}:${s}<small>지금 기준</small>`;
+  }
+  tick(); setInterval(tick, 1000);
+
+  // 오늘/내일/모레 버튼을 실제 날짜로
+  function dayAt(i) { const d = new Date(); d.setDate(d.getDate() + i); return d; }
+  function render() {
+    const labels = ["오늘", "내일", "모레"];
+    $("days").innerHTML = labels.map((l, i) => {
+      const d = dayAt(i);
+      return `<button type="button" class="${i === dayIndex ? "on" : ""}" data-i="${i}"><b>${l}</b><span>${d.getMonth() + 1}/${d.getDate()}(${WEEK[d.getDay()]})</span></button>`;
+    }).join("");
+    $("place").textContent = place;
+    $("hintPlace").textContent = place;
+    $("hintDay").textContent = labels[dayIndex];
+  }
+  $("days").addEventListener("click", (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    dayIndex = Number(b.dataset.i); render();
+  });
+
+  // 시/도 → 시·군·구
+  function fillSigungu() {
+    $("sigungu").innerHTML = REGIONS[$("sido").value].map((g) => `<option>${g}</option>`).join("");
+  }
+  $("sido").innerHTML = Object.keys(REGIONS).map((s) => `<option>${s}</option>`).join("");
+  fillSigungu();
+  $("sido").addEventListener("change", () => { fillSigungu(); pick(); });
+  $("sigungu").addEventListener("change", pick);
+  function pick() {
+    place = `${$("sido").value} ${$("sigungu").value}`;
+    $("placeSrc").textContent = "직접 선택한 지역이에요 · ⟳ 현재 위치로 되돌릴 수 있어요";
+    $("denied").classList.remove("show");
+    render();
+  }
+  $("change").addEventListener("click", () => $("picker").classList.toggle("open"));
+
+  // 현재 위치 (시안: 좌표 → 지역 이름 변환은 흉내만 냄)
+  function located() {
+    place = "서울특별시 강남구";
+    $("placeSrc").textContent = "현재 위치에서 자동으로 찾았어요 · 정확도 약 50m";
+    $("denied").classList.remove("show");
+    $("picker").classList.remove("open");
+    render();
+  }
+  function denied() {
+    place = "지역을 골라 주세요";
+    $("placeSrc").textContent = "현재 위치를 쓸 수 없어요";
+    $("denied").classList.add("show");
+    $("picker").classList.add("open");
+    render();
+  }
+  $("relocate").addEventListener("click", () => {
+    $("placeSrc").textContent = "현재 위치를 찾는 중…";
+    if (!navigator.geolocation) return denied();
+    navigator.geolocation.getCurrentPosition(located, denied, { timeout: 8000 });
+  });
+  document.querySelectorAll("[data-state]").forEach((b) =>
+    b.addEventListener("click", () => (b.dataset.state === "ok" ? located() : denied())));
+
+  render();
+</script>
+</body>
+</html>

@@ -50,6 +50,22 @@ POST /query {question}
        ├─ LCEL 구조화 출력 (Haiku)    답변 → 코디 카드(title, description, tags, items)
        └─ 응답 {answer, contexts, trace, items, outfit_summary}
 ```
+
+**실시간 모드 (기본, `WEATHER_SOURCE=live`)** — 묶음 8에서 추가했다. 위 구조에서 날씨 조회 부분이 바뀐다.
+```
+화면 web/index.html
+  ├─ 위치 권한 → web/regions.js nearestRegion()   좌표 → 가장 가까운 시·군·구 (30km 넘으면 직접 선택). 좌표는 서버로 보내지 않음
+  ├─ GET /regions   data/regions.json (시/도 16 · 시·군·구 256, 청사 좌표) + 서버 기준 오늘(한국 시간)
+  ├─ GET /weather   get_weather → Open-Meteo 3일 예보 (30분 저장) → 강수 유형 판정 → 필수품 규칙 (AI 없음)
+  └─ POST /query {question, location?, date?}
+       └─ run_query()
+            ├─ 입력 가드
+            ├─ plan_weather_calls()   src/regions.py 가 질문 속 지역을 해석 (질문 > 화면, 같은 이름은 고른 시/도, 아니면 되묻기)
+            ├─ 코드가 get_weather 를 미리 호출해 대화에 넣음 (모델은 지역·날짜를 고르지 않음)
+            └─ create_agent (실시간용 지시문) → 체감온도·문서 검색 → 답변 → 위와 같은 미들웨어·코디 카드
+```
+- 되묻기, 국내 지역 아님, 날씨 서비스 연결 실패는 AI 모델을 부르지 않고 코드가 정한 안내로 바로 답한다.
+- 평가는 계속 데모 모드로 잰다. 실시간 기능은 `evaluation/test_live.py` 자동 테스트로 검사한다.
 - **필수 준비물은 코드로 보장한다.**
   - 규칙: 강수 유형이 비·눈·진눈깨비면 그 유형으로 판정하고, 유형이 없을 때만 강수확률 50% 이상을 비로 본다. 비 → 우산, 눈 → 장갑·목도리, 진눈깨비 → 셋 다
   - 날짜별로 따로 판정한다. 같은 날짜 안에서만 여러 도시를 합친다
@@ -66,18 +82,26 @@ pip install --no-deps ragas==0.4.3      # 평가용. 이유는 requirements.txt 
 #    AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_DEFAULT_REGION=us-east-1
 #    LANGSMITH_TRACING, LANGSMITH_API_KEY, LANGSMITH_PROJECT
 #    BEDROCK_MODEL_ID=us.anthropic.claude-haiku-4-5-20251001-v1:0   # 없으면 Sonnet 4.5
+#    WEATHER_SOURCE=live    # 기본값. Open-Meteo 실시간 날씨 (키 필요 없음). mock 이면 데모 데이터(5개 도시, 기준일 12/15)
 
-# 3. 서버
+# 3. 서버 (실시간 모드)
 python -m uvicorn server:app --app-dir src --port 8000
 #    Windows 에서는 run.bat 을 더블클릭하면 서버가 켜지고 화면(http://127.0.0.1:8000/)이 자동으로 열린다
+#    화면을 열면 위치 권한을 묻고, 허용하면 가장 가까운 시·군·구의 오늘 날씨를 보여 준다 (localhost 에서만 동작)
 
-# 4. 질의 (요청 본문은 UTF-8)
+# 4. 질의 (요청 본문은 UTF-8). location·date 는 선택 항목
 curl -X POST http://127.0.0.1:8000/query -H "Content-Type: application/json" \
-     -d '{"question": "내일 부산 출근하는데 뭐 입을까?"}'
+     -d '{"question": "출근하는데 뭐 입을까?", "location": {"sido": "서울특별시", "sigungu": "강남구"}, "date": "내일"}'
+curl "http://127.0.0.1:8000/weather?sido=서울특별시&sigungu=강남구&date=오늘"   # AI 없이 날씨만
+curl "http://127.0.0.1:8000/regions"                                            # 지역 목록 + 서버 기준 오늘
 
-# 5. 평가
+# 5. 실시간 기능 자동 테스트 (59건, 인터넷·AI 모델 없이 몇 초)
+python -m pytest evaluation/test_live.py -v
+
+# 6. 평가 (항상 데모 모드로 돈다. run_eval.py 가 WEATHER_SOURCE=mock 으로 바꾼다)
 python evaluation/run_eval.py --round 2            # 인-아웃 세트 20건 (멈추면 같은 명령으로 이어서)
 python evaluation/run_eval.py --round 2 --ragas    # RAGAS 4개 지표
+#    --url 로 서버에 보내려면 서버를 데모 모드로 띄운다: WEATHER_SOURCE=mock python -m uvicorn server:app --app-dir src
 ```
 - 처음 검색할 때 `chroma_db/`에 임베딩을 만들고, 이후에는 재사용한다
 - Windows Git Bash에서 curl에 한글을 직접 넣으면 400이 날 수 있다. 그때는 요청 본문을 UTF-8 파일로 만들어 `--data-binary @파일`로 보낸다
@@ -167,14 +191,20 @@ python evaluation/run_eval.py --round 2 --ragas    # RAGAS 4개 지표
 - mock 날씨(5개 도시 × 3일)만 쓴다. Open-Meteo 실시간 연동과 MCP 노출은 하지 않았다
 
 ## 핵심 코드 위치
-- `src/agent.py:112` `build_agent` — 메인 에이전트 그래프 (모델 + 도구 3개 + 미들웨어 5개)
-- `src/agent.py:476` `run_query` — 한 질의 처리: trace, 필수품 판정, 코디 카드, 응답 조립
-- `src/agent.py:432` `RequiredItemsMiddleware` — 필수 준비물 줄 강제
-- `src/agent.py:233` `ToolEnforcementMiddleware` — 빠진 도구 호출 시 모델로 되돌림
-- `src/agent.py:267` `DailyValueNoticeMiddleware` — 시간대 질문에 하루 기준 값 안내
-- `src/agent.py:193` `InputGuardMiddleware` · `:297` `OutputPIIMiddleware` — 입력·출력 가드레일
-- `src/tools.py:63` `required_items` — 비·눈·진눈깨비 필수품 규칙
+- `src/agent.py:142` `build_agent` — 메인 에이전트 그래프 (모델 + 도구 3개 + 미들웨어 5개, 모드별 지시문)
+- `src/agent.py:672` `run_query` — 한 질의 처리: trace, 필수품 판정, 코디 카드, 응답 조립
+- `src/agent.py:596` `plan_weather_calls` · `:640` `run_live_query` — 실시간 모드: 조회할 지역·날짜를 코드로 정하고 미리 조회
+- `src/agent.py:522` `RequiredItemsMiddleware` — 필수 준비물 줄 강제
+- `src/agent.py:279` `ToolEnforcementMiddleware` — 빠진 도구 호출 시 모델로 되돌림
+- `src/agent.py:326` `DailyValueNoticeMiddleware` — 시간대 질문에 하루 기준 값 안내
+- `src/agent.py:227` `InputGuardMiddleware` · `:356` `OutputPIIMiddleware` — 입력·출력 가드레일
+- `src/tools.py:153` `required_items` — 비·눈·진눈깨비 필수품 규칙
+- `src/tools.py:167` `get_weather` · `:182` `live_weather` · `:104` `classify_precip` — 실시간(Open-Meteo)/데모 날씨 조회, 강수 유형 판정
 - `src/tools.py` — 도메인 도구 `get_weather` · `calc_feels_like` · `search_outfit_docs`
+- `src/regions.py:154` `find_regions` — 질문 속 지역 해석 (같은 이름의 구, 줄임말, 국내 아님)
 - `src/retriever.py:112` `build_hybrid_retriever` — RAG 파이프라인 (BM25 + Chroma)
-- `src/server.py` — POST /query
-- `evaluation/run_eval.py` — 인-아웃 세트 채점, LLM-as-Judge, RAGAS
+- `src/server.py` — POST /query, GET /weather, GET /regions
+- `web/index.html` · `web/regions.js` — 화면 (위치·날짜·날씨 상자, 질문, 코디 결과), 가장 가까운 시·군·구 계산
+- `data/regions.json` — 시/도 16 · 시·군·구 256 대표 좌표 (출처는 파일 머리의 source)
+- `evaluation/run_eval.py` — 인-아웃 세트 채점, LLM-as-Judge, RAGAS (데모 모드)
+- `evaluation/test_live.py` — 실시간 기능 자동 테스트 59건

@@ -96,7 +96,12 @@ def load_cases() -> list[dict]:
 
 
 def call_agent_in_process():
-    """같은 프로세스에서 에이전트를 만들어, 질문을 받아 응답 dict를 돌려주는 함수를 만든다."""
+    """같은 프로세스에서 에이전트를 만들어, 질문을 받아 응답 dict를 돌려주는 함수를 만든다.
+
+    평가는 항상 데모 모드(mock 데이터·고정 기준일)로 돈다 (SERVICE.md §5). --url 로 보낼 때는 서버를
+    WEATHER_SOURCE=mock 으로 띄워야 한다.
+    """
+    os.environ["WEATHER_SOURCE"] = "mock"
     from agent import build_agent, run_query
     agent = build_agent()
     return lambda question: run_query(agent, question)

@@ -13,6 +13,10 @@ python-dotenv==1.2.4
 fastapi==0.162.4
 uvicorn==0.54.0
 
+# 실시간 기능 자동 테스트 (evaluation/test_live.py). httpx 는 FastAPI TestClient 가 쓴다
+pytest==9.2.0
+httpx==0.28.1
+
 # 평가(RAGAS) 의존성
 # ragas 본체는 이 파일 설치 뒤 따로 설치한다: pip install --no-deps ragas==0.4.3
 # (ragas가 요구하는 scikit-network는 Python 3.14용 설치 파일이 없어 빌드가 실패한다. 지표 계산에는 쓰이지 않는다)
